@@ -39,7 +39,8 @@ public:
     // setting default parameters for PointToPoint links and channels
     Config::SetDefault("ns3::PointToPointNetDevice::DataRate", StringValue("10Mbps"));
     Config::SetDefault("ns3::PointToPointChannel::Delay", StringValue("10ms"));
-    Config::SetDefault("ns3::QueueBase::MaxPackets", UintegerValue(20));
+    Config::SetDefault("ns3::QueueBase::MaxSize",
+                       QueueSizeValue (QueueSize (QueueSizeUnit::PACKETS, 20)));
 
     createTopology({
         {"1"},

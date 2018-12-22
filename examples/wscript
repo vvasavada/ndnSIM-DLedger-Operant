@@ -12,6 +12,8 @@ def build(bld):
 
     for i in examples:
         name = str(i)[:-len(".cpp")]
+        name = name.split('/')[-1]
+
         obj = bld.create_ns3_program(name, all_modules)
         obj.source = [i] + bld.path.ant_glob(['%s/**/*.cpp' % name])
 

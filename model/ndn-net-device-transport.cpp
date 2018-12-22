@@ -56,7 +56,7 @@ NetDeviceTransport::NetDeviceTransport(Ptr<Node> node,
   if (m_netDevice->GetAttributeFailSafe("TxQueue", txQueueAttribute)) {
     Ptr<ns3::QueueBase> txQueue = txQueueAttribute.Get<ns3::QueueBase>();
     // must be put into bytes mode queue
-    this->setSendQueueCapacity(txQueue->GetMaxBytes());
+    this->setSendQueueCapacity(txQueue->GetMaxSize().GetValue());
   }
 
   NS_LOG_FUNCTION(this << "Creating an ndnSIM transport instance for netDevice with URI"
