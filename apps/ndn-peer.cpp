@@ -20,6 +20,8 @@
 namespace ns3 {
 namespace ndn {
 
+NS_OBJECT_ENSURE_REGISTERED(Peer);
+
 // register NS-3 Type
 TypeId
 Peer::GetTypeId()
@@ -54,8 +56,8 @@ Peer::GetTypeId()
 }
 
 Peer::Peer()
-  : m_frequency(1.0)
-  , m_firstTime(true)
+  : m_firstTime(true)
+  , m_frequency(1.0)
   , m_weightThreshold(10)
   , m_entropyThreshold(10)
   , m_recordNum(1)
@@ -126,7 +128,7 @@ Peer::StartApplication()
   // create genesis blocks in the DLedger
   for (int i = 0; i < m_genesisNum; i++) {
     Name genesisName(m_mcPrefix);
-    genesis1Name.append("genesis" + std::to_string(i));
+    genesisName.append("genesis" + std::to_string(i));
     auto genesis = std::make_shared<Data>(genesisName);
     m_tipList.push_back(genesisName);
     m_ledger.insert(std::pair<Name, Data>(genesisName, *genesis));
