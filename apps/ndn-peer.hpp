@@ -73,7 +73,7 @@ class Peer: public App {
 
     // Fetches record using the given prefix
     void
-    FetchRecord(std::string prefix);
+    FetchRecord(Name prefix);
 
 };
 

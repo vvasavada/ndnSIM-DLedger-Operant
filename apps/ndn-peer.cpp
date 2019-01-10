@@ -181,7 +181,7 @@ Peer::GenerateRecord()
   
   Name notifName(m_mcPrefix);
   notifName.append("NOTIF").append(m_routablePrefix.toUri()).append(std::to_string(m_recordNum));
-  auto notif = std::make_shared<ndn::Interest>(notifName);
+  auto notif = std::make_shared<Interest>(notifName);
   m_transmittedInterests(notif, this, m_face);
   m_appLink->onReceiveInterest(*notif);
 
@@ -193,10 +193,11 @@ Peer::GenerateRecord()
 
 // Send out interest to fetch record
 void
-Peer::FetchRecord(std::string prefix)
+Peer::FetchRecord(Name recordName)
 {
-  //TODO:
-    // create and send interest with given prefix
+  auto recordInterest = std::make_shared<Interest>(recordName);
+  m_transmittedInterests(recordInterest, this, m_face);
+  m_appLink->onReceiveInterest(*recordInterest);
 }
 
 // Callback that will be called when Data arrives
@@ -223,13 +224,32 @@ Peer::OnData(std::shared_ptr<const Data> data)
 void
 Peer::OnInterest(std::shared_ptr<const Interest> interest)
 {
-  ///TODO:
-    //  if interest is notif:
-      // create and send interest to retrieve new record
-    // if interest is sync:
+  auto interestNameUri = interest->getName().toUri();
+
+  // if it is notification interest (/mc-prefix/NOTIF/creator-pref/name)
+  if (interestNameUri.find("NOTIF") != std::string::npos) {
+    Name recordName(m_mcPrefix);
+    recordName.append(interest->getName().getSubName(2).toUri());
+    FetchRecord(recordName);
+
+    // else if it is sync interest
+  } else if (interestNameUri.find("SYNC") != std::string::npos) {
+    //TODO:
       // compare tip list and figure out which tips are not present
       // send fetch record interest to retrieve those tips and missing records recursively
       // if there are some tips that are more recent in local ledger, broadcast sync interest
+     
+    // else it is record fetching interest
+  } else {
+    auto it = m_ledger.find(interest->getName());
+    if (it != m_ledger.end()){
+
+      m_appLink->onReceiveData(it->second);
+    } else {
+      //TODO:
+      // this node doesnt have, need to retrieve
+    }
+  }
 }
 
 }
