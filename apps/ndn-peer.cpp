@@ -233,26 +233,52 @@ Peer::OnData(std::shared_ptr<const Data> data)
 void
 Peer::OnInterest(std::shared_ptr<const Interest> interest)
 {
-  auto interestNameUri = interest->getName().toUri();
+  auto interestName = interest->getName();
+  auto interestNameUri = interestName.toUri();
 
   // if it is notification interest (/mc-prefix/NOTIF/creator-pref/name)
   if (interestNameUri.find("NOTIF") != std::string::npos) {
     Name recordName(m_mcPrefix);
-    recordName.append(interest->getName().getSubName(2).toUri());
+    recordName.append(interestName.getSubName(2).toUri());
     FetchRecord(recordName);
 
-    // else if it is sync interest
+    // else if it is sync interest (/mc-prefix/SYNC/tip1/tip2 ...)
+    // note that here tip1 will be /mc-prefix/creator-pref/name)
   } else if (interestNameUri.find("SYNC") != std::string::npos) {
-    //TODO:
-    // compare tip list and figure out which tips are not present
-    // send fetch record interest to retrieve those tips and missing records recursively
-    // if there are some tips that are more recent in local ledger, broadcast sync interest
+    auto tipDigest = interestName.getSubName(2);
+    int iStartComponent = 0;
+    auto tipName = tipDigest.getSubName(iStartComponent, iStartComponent + 2);
+    while (tipName.toUri() != "/") {
+      auto it = m_ledger.find(tipName);
+      if (it == m_ledger.end()) {
+        FetchRecord(tipName);
+      } else {
+        // if weight is greater than 1, 
+        // this node has more recent tips
+        // trigger sync
+        auto it = m_weightList.find(tipName);
+        if (it != m_weightList.end()) { // this should ALWAYS return true
+          if (it->second > 1) {
+            Name syncName(m_mcPrefix);
+            syncName.append("SYNC");
+            for (auto i = 0; i != m_tipList.size(); i++) {
+              syncName.append(m_tipList[i].toUri());
+            }
+
+            auto syncInterest = std::make_shared<Interest>(syncName);
+            m_transmittedInterests(syncInterest, this, m_face);
+            m_appLink->onReceiveInterest(*syncInterest);
+          }
+        }
+      }
+      iStartComponent += 3;
+      tipName = tipDigest.getSubName(iStartComponent, iStartComponent + 2);
+    }
 
     // else it is record fetching interest
   } else {
-    auto it = m_ledger.find(interest->getName());
+    auto it = m_ledger.find(interestName);
     if (it != m_ledger.end()){
-
       m_appLink->onReceiveData(it->second);
     } else {
       //TODO:
