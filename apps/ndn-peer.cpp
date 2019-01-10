@@ -179,8 +179,15 @@ Peer::GenerateRecord()
 
   //TODO: increment weight (need recursive function)
   
+  Name notifName(m_mcPrefix);
+  notifName.append("NOTIF").append(m_routablePrefix.toUri()).append(std::to_string(m_recordNum));
+  auto notif = std::make_shared<ndn::Interest>(notifName);
+  m_transmittedInterests(notif, this, m_face);
+  m_appLink->onReceiveInterest(*notif);
 
   m_recordNum++; 
+
+  ScheduleNextGeneration();
 }
 
 
