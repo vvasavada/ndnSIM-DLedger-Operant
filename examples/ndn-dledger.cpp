@@ -5,7 +5,7 @@
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/ndnSIM-module.h"
-#include "broadcast_strategy.hpp"
+//#include "broadcast_strategy.hpp"
 #include <map>
 
 using namespace std;
@@ -16,6 +16,7 @@ using ns3::ndn::AppHelper;
 using ns3::ndn::StrategyChoiceHelper;
 using ns3::ndn::L3RateTracer;
 using ns3::ndn::FibHelper;
+using ns3::ndn::StrategyChoiceHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
@@ -45,14 +46,14 @@ main (int argc, char *argv[])
   }
 
   // Install NDN stack on all nodes
-  ndn::StackHelper ndnHelper;
+  StackHelper ndnHelper;
   ndnHelper.SetDefaultRoutes(true);
   ndnHelper.InstallAll();
 
   // Finish Preparation****************************************************
 
   // Choosing forwarding strategy
-  ndn::StrategyChoiceHelper::InstallAll("/", "/localhost/nfd/strategy/multicast");
+  StrategyChoiceHelper::InstallAll("/", "/localhost/nfd/strategy/multicast");
 
   // install SyncApp
   int counter = 0;
@@ -64,8 +65,8 @@ main (int argc, char *argv[])
     sleepingAppHelper.SetAttribute("GroupSize", UintegerValue(2));
     sleepingAppHelper.Install(object).Start(Seconds(2));
 
-    FibHelper::AddRoute(object, "/dledger/node" + std::to_string(counter) + "/group0",
-                        std::numeric_limits<int32_t>::max());
+    //FibHelper::AddRoute(object, "/dledger/node" + std::to_string(counter) + "/group0",
+    //                    std::numeric_limits<int32_t>::max());
     counter++;
   }
 
