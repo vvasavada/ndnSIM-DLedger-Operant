@@ -54,12 +54,18 @@ class Peer: public App {
     std::string m_randomType;
     EventId m_sendEvent; ///< @brief EventId of pending "send packet" event
 
-    std::vector<std::string> m_tipList; // Tip list
-    std::map<std::string, Data> m_ledger; // A map name:record storing entire ledger
+    std::vector<Name> m_tipList; // Tip list
+    std::map<Name, Data> m_ledger; // A map name:record storing entire ledger
 
     int m_weightThreshold;
     int m_entropyThreshold;
 
+  private:
+    Name m_routablePrefix; // Node's prefix
+    Name m_mcPrefix; // Multicast prefix
+
+    int m_recordNum; // instead of random hash, simply call record1, record2, ...
+  
   private:
     // Generates new record and sends notif interest
     void

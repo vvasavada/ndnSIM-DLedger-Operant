@@ -11,6 +11,12 @@
 #include "ns3/integer.h"
 #include "ns3/double.h"
 
+#include <stdlib.h>
+
+#include "../ndn-cxx/src/encoding/block-helpers.hpp"
+#include "../ndn-cxx/src/encoding/tlv.hpp"
+#include "ns3/ndnSIM/helper/ndn-stack-helper.hpp"
+
 namespace ns3 {
 namespace ndn {
 
@@ -23,6 +29,10 @@ Peer::GetTypeId()
     .AddConstructor<Peer>()
     .AddAttribute("Frequency", "Frequency of record generation", StringValue("1"),
                   MakeIntegerAccessor(&Peer::m_frequency), MakeIntegerChecker<int32_t>())
+    .AddAttribute("Routable-Prefix", "Node's Prefix, for which producer has the data", StringValue("/"),
+                  MakeNameAccessor(&Peer::m_routablePrefix), MakeNameChecker())
+    .AddAttribute("Multicast-Prefix", "Multicast Prefix", StringValue("/"),
+                  MakeNameAccessor(&Peer::m_mcPrefix), MakeNameChecker())
     .AddAttribute("Randomize",
                   "Type of send time randomization: none (default), uniform, exponential",
                   StringValue("none"),
@@ -36,6 +46,7 @@ Peer::Peer()
   , m_firstTime(true)
   , m_weightThreshold(10)
   , m_entropyThreshold(10)
+  , m_recordNum(1)
 {
 }
 
@@ -100,7 +111,19 @@ Peer::StartApplication()
 {
    App::StartApplication();
 
-   //TODO: Create hardcoded genesis records and add them to list of tips as current tips
+   // create two hardcoded genesis records and add them to tip list
+   Name genesis1Name(m_mcPrefix);
+   genesis1Name.append("genesis1");
+   auto genesis1 = std::make_shared<Data>(genesis1Name);
+   m_tipList.push_back(genesis1Name);
+   m_ledger.insert(std::pair<Name, Data>(genesis1Name, *genesis1));
+
+   Name genesis2Name(m_mcPrefix);
+   genesis2Name.append("genesis2");
+   auto genesis2 = std::make_shared<Data>(genesis2Name);
+   m_tipList.push_back(genesis2Name);
+   m_ledger.insert(std::pair<Name, Data>(genesis2Name, *genesis2));
+
    ScheduleNextGeneration();
 }
 
@@ -117,17 +140,47 @@ void
 Peer::GenerateRecord()
 {
 
-  //TODO:
-    // generate random hash
-    // create new data packet and set its name to prefix+hash
-    // pick n records from tip list (if tip list size < n, repeat some)
-    // set data contents to be reference1:referece2:...:referecen so that it is easy to parse
-    // where reference1...n are names of tips
-    // (note: we can keep record payload empty)
-    // sign the data packet
-    // attach it to local ledger i.e. add to map
-    // increment weights of direct and indirect referred records
-    // create and send out notif interest 
+  // generate a new record
+  Name recordName(m_mcPrefix);
+  recordName.append(m_routablePrefix.toUri()).append(std::to_string(m_recordNum));
+  auto record = std::make_shared<Data>(recordName);
+
+  //TODO: need to add while loop for below code and 
+  // keep selecting references until you get 
+  // both of them produced by different node
+  // i.e. name shouldn't contain this node's routable prefix
+
+  // select two references randomly
+  auto reference1Index = rand() % (m_tipList.size() - 1);
+  auto reference2Index = rand() % (m_tipList.size() - 1);
+  auto reference1 = m_tipList.at(reference1Index);
+  auto reference2 = m_tipList.at(reference2Index);
+
+  // if indices are not same, we got two different references
+    // remove both of them from tiplist
+  // else
+    // remove the tip that got selected twice  
+  if (reference1Index != reference2Index){
+    m_tipList.erase(m_tipList.begin() + reference1Index);
+    m_tipList.erase(m_tipList.begin() + reference2Index);
+  } else {
+    m_tipList.erase(m_tipList.begin() + reference1Index);
+  }
+
+  record->setContent(::ndn::encoding::makeStringBlock(::ndn::tlv::Content, 
+                                                    reference1.toUri() + ":" + reference2.toUri()));
+  ndn::StackHelper::getKeyChain().sign(*record);
+
+  // attach to local ledger
+  m_ledger.insert(std::pair<Name, Data>(recordName, *record));
+
+  // add to tip list
+  m_tipList.push_back(recordName);
+
+  //TODO: increment weight (need recursive function)
+  
+
+  m_recordNum++; 
 }
 
 
