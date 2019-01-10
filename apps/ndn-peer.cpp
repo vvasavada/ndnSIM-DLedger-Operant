@@ -27,8 +27,20 @@ Peer::GetTypeId()
   static TypeId tid = TypeId("Peer")
     .SetParent<App>()
     .AddConstructor<Peer>()
-    .AddAttribute("Frequency", "Frequency of record generation", StringValue("1"),
+    //******** Variables to tune
+    .AddAttribute("Frequency", "Frequency of record generation", IntegerValue(1),
                   MakeIntegerAccessor(&Peer::m_frequency), MakeIntegerChecker<int32_t>())
+    .AddAttribute("WeightThreshold", "Weight to consider archive", IntegerValue(10),
+                  MakeIntegerAccessor(&Peer::m_weightThreshold), MakeIntegerChecker<int32_t>())
+    .AddAttribute("MaxWeight", "The max weight a block can gain", IntegerValue(15),
+                  MakeIntegerAccessor(&Peer::m_maxWeight), MakeIntegerChecker<int32_t>())
+    .AddAttribute("EntropyThreshold", "Entropy value of peers", IntegerValue(5),
+                  MakeIntegerAccessor(&Peer::m_entropyThreshold), MakeIntegerChecker<int32_t>())
+    .AddAttribute("GenesisNum", "Number of genesis blocks", IntegerValue(2),
+                  MakeIntegerAccessor(&Peer::m_genesisNum), MakeIntegerChecker<int32_t>())
+    .AddAttribute("ReferredNum", "Number of referred blocks", IntegerValue(2),
+                  MakeIntegerAccessor(&Peer::m_referredNum), MakeIntegerChecker<int32_t>())
+    //********
     .AddAttribute("Routable-Prefix", "Node's Prefix, for which producer has the data", StringValue("/"),
                   MakeNameAccessor(&Peer::m_routablePrefix), MakeNameChecker())
     .AddAttribute("Multicast-Prefix", "Multicast Prefix", StringValue("/"),
@@ -109,22 +121,18 @@ Peer::GetRandomize() const
 void
 Peer::StartApplication()
 {
-   App::StartApplication();
+  App::StartApplication();
 
-   // create two hardcoded genesis records and add them to tip list
-   Name genesis1Name(m_mcPrefix);
-   genesis1Name.append("genesis1");
-   auto genesis1 = std::make_shared<Data>(genesis1Name);
-   m_tipList.push_back(genesis1Name);
-   m_ledger.insert(std::pair<Name, Data>(genesis1Name, *genesis1));
+  // create genesis blocks in the DLedger
+  for (int i = 0; i < m_genesisNum; i++) {
+    Name genesisName(m_mcPrefix);
+    genesis1Name.append("genesis" + std::to_string(i));
+    auto genesis = std::make_shared<Data>(genesisName);
+    m_tipList.push_back(genesisName);
+    m_ledger.insert(std::pair<Name, Data>(genesisName, *genesis));
+  }
 
-   Name genesis2Name(m_mcPrefix);
-   genesis2Name.append("genesis2");
-   auto genesis2 = std::make_shared<Data>(genesis2Name);
-   m_tipList.push_back(genesis2Name);
-   m_ledger.insert(std::pair<Name, Data>(genesis2Name, *genesis2));
-
-   ScheduleNextGeneration();
+  ScheduleNextGeneration();
 }
 
 // Processing when application is stopped
@@ -139,14 +147,13 @@ Peer::StopApplication()
 void
 Peer::GenerateRecord()
 {
-
   // generate a new record
   Name recordName(m_mcPrefix);
   recordName.append(m_routablePrefix.toUri()).append(std::to_string(m_recordNum));
   auto record = std::make_shared<Data>(recordName);
 
-  //TODO: need to add while loop for below code and 
-  // keep selecting references until you get 
+  //TODO: need to add while loop for below code and
+  // keep selecting references until you get
   // both of them produced by different node
   // i.e. name shouldn't contain this node's routable prefix
 
@@ -157,9 +164,9 @@ Peer::GenerateRecord()
   auto reference2 = m_tipList.at(reference2Index);
 
   // if indices are not same, we got two different references
-    // remove both of them from tiplist
+  // remove both of them from tiplist
   // else
-    // remove the tip that got selected twice  
+  // remove the tip that got selected twice
   if (reference1Index != reference2Index){
     m_tipList.erase(m_tipList.begin() + reference1Index);
     m_tipList.erase(m_tipList.begin() + reference2Index);
@@ -167,8 +174,8 @@ Peer::GenerateRecord()
     m_tipList.erase(m_tipList.begin() + reference1Index);
   }
 
-  record->setContent(::ndn::encoding::makeStringBlock(::ndn::tlv::Content, 
-                                                    reference1.toUri() + ":" + reference2.toUri()));
+  record->setContent(::ndn::encoding::makeStringBlock(::ndn::tlv::Content,
+                                                      reference1.toUri() + ":" + reference2.toUri()));
   ndn::StackHelper::getKeyChain().sign(*record);
 
   // attach to local ledger
@@ -178,14 +185,14 @@ Peer::GenerateRecord()
   m_tipList.push_back(recordName);
 
   //TODO: increment weight (need recursive function)
-  
+
   Name notifName(m_mcPrefix);
   notifName.append("NOTIF").append(m_routablePrefix.toUri()).append(std::to_string(m_recordNum));
   auto notif = std::make_shared<Interest>(notifName);
   m_transmittedInterests(notif, this, m_face);
   m_appLink->onReceiveInterest(*notif);
 
-  m_recordNum++; 
+  m_recordNum++;
 
   ScheduleNextGeneration();
 }
@@ -205,19 +212,19 @@ void
 Peer::OnData(std::shared_ptr<const Data> data)
 {
   //TODO:
-    // ignore data if it is just reply to notif and sync interest
-    // if data is a record:
-      // Verification:
-        // verify signature (PoA)
-        // verify application level semantics (record is not already in ledger)
-        // verify record does refer to records generated by same producer
-        // ...
-      // When verification passes, check if approved records are in local ledger
-      // if not, retrieve them recursively and keep queuing
-      // once all records are obtained, remove from queue and add to local ledger
-      // (note if one of the records during sync fails to receive, discard entire queue)
-      // increment weights of direct and indirect referred records
-      // archive records that passes weight and entropy thresholds
+  // ignore data if it is just reply to notif and sync interest
+  // if data is a record:
+  // Verification:
+  // verify signature (PoA)
+  // verify application level semantics (record is not already in ledger)
+  // verify record does refer to records generated by same producer
+  // ...
+  // When verification passes, check if approved records are in local ledger
+  // if not, retrieve them recursively and keep queuing
+  // once all records are obtained, remove from queue and add to local ledger
+  // (note if one of the records during sync fails to receive, discard entire queue)
+  // increment weights of direct and indirect referred records
+  // archive records that passes weight and entropy thresholds
 }
 
 // Callback that will be called when Interest arrives
@@ -235,10 +242,10 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
     // else if it is sync interest
   } else if (interestNameUri.find("SYNC") != std::string::npos) {
     //TODO:
-      // compare tip list and figure out which tips are not present
-      // send fetch record interest to retrieve those tips and missing records recursively
-      // if there are some tips that are more recent in local ledger, broadcast sync interest
-     
+    // compare tip list and figure out which tips are not present
+    // send fetch record interest to retrieve those tips and missing records recursively
+    // if there are some tips that are more recent in local ledger, broadcast sync interest
+
     // else it is record fetching interest
   } else {
     auto it = m_ledger.find(interest->getName());
