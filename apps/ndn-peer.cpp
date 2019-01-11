@@ -12,7 +12,7 @@
 #include "ns3/double.h"
 
 #include <stdlib.h>
-
+#include "../ndn-cxx/src/util/sha256.hpp"
 #include "../ndn-cxx/src/encoding/block-helpers.hpp"
 #include "../ndn-cxx/src/encoding/tlv.hpp"
 #include "ns3/ndnSIM/helper/ndn-stack-helper.hpp"
@@ -151,52 +151,57 @@ Peer::StopApplication()
 void
 Peer::GenerateRecord()
 {
-  // generate a new record
-  Name recordName(m_mcPrefix);
-  recordName.append(m_routablePrefix.toUri()).append(std::to_string(m_recordNum));
-  auto record = std::make_shared<Data>(recordName);
-
   //TODO: need to add while loop for below code and
   // keep selecting references until you get
   // both of them produced by different node
   // i.e. name shouldn't contain this node's routable prefix
 
-  // select two references randomly
-  auto reference1Index = rand() % (m_tipList.size() - 1);
-  auto reference2Index = rand() % (m_tipList.size() - 1);
-  auto reference1 = m_tipList.at(reference1Index);
-  auto reference2 = m_tipList.at(reference2Index);
-
-  // if indices are not same, we got two different references
-  // remove both of them from tiplist
-  // else
-  // remove the tip that got selected twice
-  if (reference1Index != reference2Index){
-    m_tipList.erase(m_tipList.begin() + reference1Index);
-    m_tipList.erase(m_tipList.begin() + reference2Index);
-  } else {
-    m_tipList.erase(m_tipList.begin() + reference1Index);
+  std::set<Name> selectedBlocks;
+  for (int i = 0; i < m_referredNum; i++) {
+    auto referenceIndex = rand() % (m_tipList.size() - 1);
+    auto reference = m_tipList.at(referenceIndex);
+    selectedBlocks.insert(reference);
   }
 
-  record->setContent(::ndn::encoding::makeStringBlock(::ndn::tlv::Content,
-                                                      reference1.toUri() + ":" + reference2.toUri()));
+  std::string recordContent = "";
+  for (const auto& item : selectedBlocks) {
+    recordContent += ":";
+    recordContent += item.toUri();
+
+    m_tipList.erase(std::remove(m_tipList.begin(),
+                                m_tipList.end(), item), m_tipList.end());
+  }
+  // to avoid the same digest made by multiple peers, add peer specific info
+  recordContent += "***";
+  recordContent += m_routablePrefix.toUri();
+
+  // generate digest as a name component
+  std::istringstream sha256Is(recordContent);
+  ::ndn::util::Sha256 sha(sha256Is);
+  std::string recordDigest = sha.toString();
+  sha.reset();
+
+  // generate a new record
+  Name recordName(m_routablePrefix);
+  recordName.append(recordDigest);
+  auto record = std::make_shared<Data>(recordName);
+  record->setContent(::ndn::encoding::makeStringBlock(::ndn::tlv::Content, recordContent));
   ndn::StackHelper::getKeyChain().sign(*record);
 
   // attach to local ledger
   m_ledger.insert(std::pair<Name, Data>(recordName, *record));
-
   // add to tip list
   m_tipList.push_back(recordName);
 
   //TODO: increment weight (need recursive function)
 
   Name notifName(m_mcPrefix);
-  notifName.append("NOTIF").append(m_routablePrefix.toUri()).append(std::to_string(m_recordNum));
+  notifName.append("NOTIF").append(m_routablePrefix.toUri()).append(recordDigest);
   auto notif = std::make_shared<Interest>(notifName);
+
+  NS_LOG_INFO("> NOTIF Interest " << notif->getName().toUri());
   m_transmittedInterests(notif, this, m_face);
   m_appLink->onReceiveInterest(*notif);
-
-  m_recordNum++;
 
   ScheduleNextGeneration();
 }
