@@ -17,6 +17,8 @@
 #include "../ndn-cxx/src/encoding/tlv.hpp"
 #include "ns3/ndnSIM/helper/ndn-stack-helper.hpp"
 
+NS_LOG_COMPONENT_DEFINE("ndn.peer");
+
 namespace ns3 {
 namespace ndn {
 
@@ -38,7 +40,7 @@ Peer::GetTypeId()
                   MakeIntegerAccessor(&Peer::m_maxWeight), MakeIntegerChecker<int32_t>())
     .AddAttribute("EntropyThreshold", "Entropy value of peers", IntegerValue(5),
                   MakeIntegerAccessor(&Peer::m_entropyThreshold), MakeIntegerChecker<int32_t>())
-    .AddAttribute("GenesisNum", "Number of genesis blocks", IntegerValue(2),
+    .AddAttribute("GenesisNum", "Number of genesis blocks", IntegerValue(5),
                   MakeIntegerAccessor(&Peer::m_genesisNum), MakeIntegerChecker<int32_t>())
     .AddAttribute("ReferredNum", "Number of referred blocks", IntegerValue(2),
                   MakeIntegerAccessor(&Peer::m_referredNum), MakeIntegerChecker<int32_t>())
@@ -57,9 +59,6 @@ Peer::GetTypeId()
 
 Peer::Peer()
   : m_firstTime(true)
-  , m_frequency(1.0)
-  , m_weightThreshold(10)
-  , m_entropyThreshold(10)
   , m_recordNum(1)
 {
 }
@@ -67,6 +66,7 @@ Peer::Peer()
 void
 Peer::ScheduleNextGeneration()
 {
+  NS_LOG_FUNCTION_NOARGS();
   // double mean = 8.0 * m_payloadSize / m_desiredRate.GetBitRate ();
   // std::cout << "next: " << Simulator::Now().ToDouble(Time::S) + mean << "s\n";
 
@@ -123,6 +123,7 @@ Peer::GetRandomize() const
 void
 Peer::StartApplication()
 {
+  NS_LOG_FUNCTION_NOARGS();
   App::StartApplication();
 
   // create genesis blocks in the DLedger
@@ -141,6 +142,7 @@ Peer::StartApplication()
 void
 Peer::StopApplication()
 {
+  NS_LOG_FUNCTION_NOARGS();
   // cleanup App
   App::StopApplication();
 }
@@ -213,6 +215,7 @@ Peer::FetchRecord(Name recordName)
 void
 Peer::OnData(std::shared_ptr<const Data> data)
 {
+  NS_LOG_FUNCTION(this << data);
   //TODO:
   // ignore data if it is just reply to notif and sync interest
   // if data is a record:
@@ -233,6 +236,7 @@ Peer::OnData(std::shared_ptr<const Data> data)
 void
 Peer::OnInterest(std::shared_ptr<const Interest> interest)
 {
+  NS_LOG_FUNCTION(this << interest);
   auto interestName = interest->getName();
   auto interestNameUri = interestName.toUri();
 
@@ -244,7 +248,8 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
 
     // else if it is sync interest (/mc-prefix/SYNC/tip1/tip2 ...)
     // note that here tip1 will be /mc-prefix/creator-pref/name)
-  } else if (interestNameUri.find("SYNC") != std::string::npos) {
+  }
+  else if (interestNameUri.find("SYNC") != std::string::npos) {
     auto tipDigest = interestName.getSubName(2);
     int iStartComponent = 0;
     auto tipName = tipDigest.getSubName(iStartComponent, iStartComponent + 2);
@@ -253,7 +258,7 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
       if (it == m_ledger.end()) {
         FetchRecord(tipName);
       } else {
-        // if weight is greater than 1, 
+        // if weight is greater than 1,
         // this node has more recent tips
         // trigger sync
         auto it = m_weightList.find(tipName);
@@ -276,11 +281,13 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
     }
 
     // else it is record fetching interest
-  } else {
+  }
+  else {
     auto it = m_ledger.find(interestName);
     if (it != m_ledger.end()){
       m_appLink->onReceiveData(it->second);
-    } else {
+    }
+    else {
       //TODO:
       // this node doesnt have, need to retrieve
     }

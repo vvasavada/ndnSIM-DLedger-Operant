@@ -5,7 +5,6 @@
 #include "ns3/internet-module.h"
 #include "ns3/point-to-point-module.h"
 #include "ns3/ndnSIM-module.h"
-//#include "broadcast_strategy.hpp"
 #include <map>
 
 using namespace std;
@@ -61,8 +60,16 @@ main (int argc, char *argv[])
     Ptr<Node> object = *i;
 
     AppHelper sleepingAppHelper("Peer");
-    sleepingAppHelper.SetAttribute("Prefix", StringValue("/dledger/node" + std::to_string(counter)));
-    sleepingAppHelper.SetAttribute("GroupSize", UintegerValue(2));
+    sleepingAppHelper.SetAttribute("Routable-Prefix",
+                                   StringValue("/dledger/node" + std::to_string(counter)));
+    sleepingAppHelper.SetAttribute("Multicast-Prefix",
+                                   StringValue("/dledger"));
+    sleepingAppHelper.SetAttribute("Frequency", IntegerValue(1));
+    sleepingAppHelper.SetAttribute("WeightThreshold", IntegerValue(10));
+    sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
+    sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
+    sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(2));
+
     sleepingAppHelper.Install(object).Start(Seconds(2));
 
     //FibHelper::AddRoute(object, "/dledger/node" + std::to_string(counter) + "/group0",
