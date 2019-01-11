@@ -43,15 +43,27 @@ protected:
   ScheduleNextSync();
 
   void
-  SetRandomize(const std::string& value);
+  SetRandomize(const std::string& value, double frequency);
+
+  void SetGenerationRandomize(const std::string& value);
+
+  void
+  SetSyncRandomize(const std::string& value);
 
   std::string
-  GetRandomize() const;
+  GetGenerationRandomize() const;
+
+  std::string
+  GetSyncRandomize() const;
 
 private:
   // Generates new record and sends notif interest
   void
   GenerateRecord();
+
+  // Triggers sync interest
+  void
+  GenerateSync();
 
   // Fetches record using the given prefix
   void
@@ -60,9 +72,13 @@ private:
 protected:
 
   bool m_firstTime;
+  bool m_syncFirstTime;
   Ptr<RandomVariableStream> m_random;
-  std::string m_randomType;
+  Ptr<RandomVariableStream> m_syncRandom;
+  std::string m_randomTypeGeneration;
+  std::string m_randomTypeSync;
   EventId m_sendEvent; ///< @brief EventId of pending "send packet" event
+  EventId m_syncSendEvent;
 
   std::vector<Name> m_tipList; // Tip list
   std::map<Name, Data> m_ledger; // A map name:record storing entire ledger
@@ -71,6 +87,7 @@ protected:
 
   // the var to tune
   double m_frequency; // Frequency of record generation (in hertz)
+  double m_syncFrequency; // Frequency of sync interest multicast
   int m_weightThreshold; // weight to be considered as archived block
   int m_maxWeight; // max weight of a block which no new tips can refer
   int m_entropyThreshold; // the number of peers to approve

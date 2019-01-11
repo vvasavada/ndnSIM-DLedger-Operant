@@ -34,6 +34,8 @@ Peer::GetTypeId()
     //******** Variables to tune
     .AddAttribute("Frequency", "Frequency of record generation", IntegerValue(1),
                   MakeIntegerAccessor(&Peer::m_frequency), MakeIntegerChecker<int32_t>())
+    .AddAttribute("SyncFrequency", "Frequency of sync interest multicast", IntegerValue(1),
+                  MakeIntegerAccessor(&Peer::m_syncFrequency), MakeIntegerChecker<int32_t>())
     .AddAttribute("WeightThreshold", "Weight to consider archive", IntegerValue(10),
                   MakeIntegerAccessor(&Peer::m_weightThreshold), MakeIntegerChecker<int32_t>())
     .AddAttribute("MaxWeight", "The max weight a block can gain", IntegerValue(15),
@@ -52,13 +54,19 @@ Peer::GetTypeId()
     .AddAttribute("Randomize",
                   "Type of send time randomization: none (default), uniform, exponential",
                   StringValue("none"),
-                  MakeStringAccessor(&Peer::SetRandomize, &Peer::GetRandomize),
+                  MakeStringAccessor(&Peer::SetGenerationRandomize, &Peer::GetGenerationRandomize),
+                  MakeStringChecker())
+    .AddAttribute("SyncRandomize",
+                  "Type of sync randomization: none (default), uniform, exponential",
+                  StringValue("none"),
+                  MakeStringAccessor(&Peer::SetSyncRandomize, &Peer::GetSyncRandomize),
                   MakeStringChecker());
   return tid;
 }
 
 Peer::Peer()
   : m_firstTime(true)
+  , m_syncFirstTime(true)
   , m_recordNum(1)
 {
 }
@@ -91,11 +99,30 @@ Peer::ScheduleNextGeneration()
 void
 Peer::ScheduleNextSync()
 {
-  //TODO
+  NS_LOG_FUNCTION_NOARGS();
+  // double mean = 8.0 * m_payloadSize / m_desiredRate.GetBitRate ();
+  // std::cout << "next: " << Simulator::Now().ToDouble(Time::S) + mean << "s\n";
+
+  if (m_syncFirstTime) {
+    m_syncSendEvent = Simulator::Schedule(Seconds(0.0), &Peer::GenerateSync, this);
+    m_syncFirstTime = false;
+  }
+  else if (!m_syncSendEvent.IsRunning()) {
+    if (m_syncFrequency == 0) {
+      m_syncSendEvent = Simulator::Schedule((m_syncRandom == 0) ? Seconds(1.0 / 1)
+                                        : Seconds(m_syncRandom->GetValue()),
+                                        &Peer::GenerateSync, this);
+    }
+    else {
+      m_syncSendEvent = Simulator::Schedule((m_syncRandom == 0) ? Seconds(1.0 / m_syncFrequency)
+                                        : Seconds(m_syncRandom->GetValue()),
+                                        &Peer::GenerateSync, this);
+    }
+  } 
 }
 
 void
-Peer::SetRandomize(const std::string& value)
+Peer::SetGenerationRandomize(const std::string& value)
 {
   if (value == "uniform") {
     m_random = CreateObject<UniformRandomVariable>();
@@ -110,13 +137,39 @@ Peer::SetRandomize(const std::string& value)
   else
     m_random = 0;
 
-  m_randomType = value;
+  m_randomTypeGeneration = value;
+}
+
+void
+Peer::SetSyncRandomize(const std::string& value)
+{
+  if (value == "uniform") {
+    m_syncRandom = CreateObject<UniformRandomVariable>();
+    m_syncRandom->SetAttribute("Min", DoubleValue(0.0));
+    m_syncRandom->SetAttribute("Max", DoubleValue(2 * 1.0 / m_syncFrequency));
+  }
+  else if (value == "exponential") {
+    m_syncRandom = CreateObject<ExponentialRandomVariable>();
+    m_syncRandom->SetAttribute("Mean", DoubleValue(1.0 / m_syncFrequency));
+    m_syncRandom->SetAttribute("Bound", DoubleValue(50 * 1.0 / m_syncFrequency));
+  }
+  else
+    m_syncRandom = 0;
+
+  m_randomTypeSync = value;
+
 }
 
 std::string
-Peer::GetRandomize() const
+Peer::GetGenerationRandomize() const
 {
-  return m_randomType;
+  return m_randomTypeGeneration;
+}
+
+std::string
+Peer::GetSyncRandomize() const
+{
+  return m_randomTypeSync;
 }
 
 // Processing upon start of the application
@@ -138,6 +191,7 @@ Peer::StartApplication()
   }
 
   ScheduleNextGeneration();
+  ScheduleNextSync();
 }
 
 // Processing when application is stopped
@@ -147,6 +201,23 @@ Peer::StopApplication()
   NS_LOG_FUNCTION_NOARGS();
   // cleanup App
   App::StopApplication();
+}
+
+// Triggers sync interest
+void
+Peer::GenerateSync()
+{
+  Name syncName(m_mcPrefix);
+  syncName.append("SYNC");
+  for (auto i = 0; i != m_tipList.size(); i++) {
+    syncName.append(m_tipList[i].toUri());
+  }
+  
+  auto syncInterest = std::make_shared<Interest>(syncName);
+  m_transmittedInterests(syncInterest, this, m_face);
+  m_appLink->onReceiveInterest(*syncInterest);
+
+  ScheduleNextSync();
 }
 
 // Generate a new record and send out notif and sync interest
