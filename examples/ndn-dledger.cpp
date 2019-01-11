@@ -19,6 +19,14 @@ using ns3::ndn::GlobalRoutingHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
+void
+failLink(Ptr<NetDevice> nd)
+{
+  Ptr<RateErrorModel> error = CreateObject<RateErrorModel> ();
+  error->SetAttribute ("ErrorRate", DoubleValue (1.0));
+  nd->SetAttribute ("ReceiveErrorModel", PointerValue(error));
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -33,14 +41,15 @@ main(int argc, char *argv[])
   cmd.Parse(argc, argv);
 
   // Creating nodes
+  int node_num = 60;
   NodeContainer nodes;
-  nodes.Create(30);
+  nodes.Create(node_num);
 
   // Connecting nodes using two links
   PointToPointHelper p2p;
   p2p.Install(nodes.Get(0), nodes.Get(1));
   p2p.Install(nodes.Get(1), nodes.Get(2));
-  for (int i = 0; i < 29; i++) {
+  for (int i = 0; i < node_num - 1; i++) {
     p2p.Install(nodes.Get(i), nodes.Get(i + 1));
   }
 
@@ -85,7 +94,10 @@ main(int argc, char *argv[])
   GlobalRoutingHelper::CalculateRoutes();
 
   // Finish Installation****************************************************
-
+  Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(30)->GetDevice(0));
+  Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(31)->GetDevice(0));
+  Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
+  Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
   Simulator::Stop(Seconds (100.0));
 
   Simulator::Run();
