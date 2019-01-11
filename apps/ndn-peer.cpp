@@ -47,7 +47,7 @@ Peer::GetTypeId()
     //********
     .AddAttribute("Routable-Prefix", "Node's Prefix, for which producer has the data", StringValue("/"),
                   MakeNameAccessor(&Peer::m_routablePrefix), MakeNameChecker())
-    .AddAttribute("Multicast-Prefix", "Multicast Prefix", StringValue("/"),
+    .AddAttribute("Multicast-Prefix", "Multicast Prefix", StringValue("/dledger"),
                   MakeNameAccessor(&Peer::m_mcPrefix), MakeNameChecker())
     .AddAttribute("Randomize",
                   "Type of send time randomization: none (default), uniform, exponential",

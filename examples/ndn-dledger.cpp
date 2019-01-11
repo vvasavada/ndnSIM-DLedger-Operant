@@ -12,15 +12,15 @@ using namespace ns3;
 
 using ns3::ndn::StackHelper;
 using ns3::ndn::AppHelper;
-using ns3::ndn::StrategyChoiceHelper;
 using ns3::ndn::L3RateTracer;
 using ns3::ndn::FibHelper;
 using ns3::ndn::StrategyChoiceHelper;
+using ns3::ndn::GlobalRoutingHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
 int
-main (int argc, char *argv[])
+main(int argc, char *argv[])
 {
   // setting default parameters for PointToPoint links and channels
   Config::SetDefault("ns3::PointToPointNetDevice::DataRate", StringValue("10Mbps"));
@@ -54,16 +54,19 @@ main (int argc, char *argv[])
   // Choosing forwarding strategy
   StrategyChoiceHelper::InstallAll("/", "/localhost/nfd/strategy/multicast");
 
+  // Installing global routing interface on all nodes
+  GlobalRoutingHelper ndnGlobalRoutingHelper;
+  ndnGlobalRoutingHelper.InstallAll();
+
   // install SyncApp
   int counter = 0;
   for (NodeContainer::Iterator i = nodes.Begin(); i != nodes.End(); ++i) {
     Ptr<Node> object = *i;
 
+    std::string prefix = "/dledger/node" + std::to_string(counter);
     AppHelper sleepingAppHelper("Peer");
-    sleepingAppHelper.SetAttribute("Routable-Prefix",
-                                   StringValue("/dledger/node" + std::to_string(counter)));
-    sleepingAppHelper.SetAttribute("Multicast-Prefix",
-                                   StringValue("/dledger"));
+    sleepingAppHelper.SetAttribute("Routable-Prefix", StringValue(prefix));
+    sleepingAppHelper.SetAttribute("Multicast-Prefix", StringValue("/dledger"));
     sleepingAppHelper.SetAttribute("Frequency", IntegerValue(1));
     sleepingAppHelper.SetAttribute("WeightThreshold", IntegerValue(10));
     sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
@@ -72,10 +75,13 @@ main (int argc, char *argv[])
 
     sleepingAppHelper.Install(object).Start(Seconds(2));
 
-    //FibHelper::AddRoute(object, "/dledger/node" + std::to_string(counter) + "/group0",
-    //                    std::numeric_limits<int32_t>::max());
+    // Add /prefix origins to ndn::GlobalRouter
+    ndnGlobalRoutingHelper.AddOrigins(prefix, object);
     counter++;
   }
+
+  // Calculate and install FIBs
+  GlobalRoutingHelper::CalculateRoutes();
 
   // Finish Installation****************************************************
 
