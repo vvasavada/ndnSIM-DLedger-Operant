@@ -125,6 +125,8 @@ Peer::StartApplication()
 {
   NS_LOG_FUNCTION_NOARGS();
   App::StartApplication();
+  FibHelper::AddRoute(GetNode(), m_routablePrefix, m_face, 0);
+  FibHelper::AddRoute(GetNode(), m_mcPrefix, m_face, 0);
 
   // create genesis blocks in the DLedger
   for (int i = 0; i < m_genesisNum; i++) {
@@ -241,7 +243,7 @@ Peer::OnData(std::shared_ptr<const Data> data)
 void
 Peer::OnInterest(std::shared_ptr<const Interest> interest)
 {
-  NS_LOG_FUNCTION(this << interest);
+  NS_LOG_INFO("< Interest " << interest->getName().toUri());
   auto interestName = interest->getName();
   auto interestNameUri = interestName.toUri();
 

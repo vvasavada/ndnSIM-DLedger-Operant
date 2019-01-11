@@ -77,6 +77,7 @@ main(int argc, char *argv[])
 
     // Add /prefix origins to ndn::GlobalRouter
     ndnGlobalRoutingHelper.AddOrigins(prefix, object);
+    ndnGlobalRoutingHelper.AddOrigins("/dledger", object);
     counter++;
   }
 
