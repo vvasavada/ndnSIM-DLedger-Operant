@@ -4,6 +4,8 @@
 #include "ns3/ndnSIM/model/ndn-common.hpp"
 #include "ns3/ndnSIM/apps/ndn-consumer.hpp"
 
+#include <stack>
+
 namespace ns3 {
 namespace ndn {
 
@@ -84,6 +86,8 @@ protected:
   std::map<Name, Data> m_ledger; // A map name:record storing entire ledger
   std::map<Name, int> m_weightList; // A map name:weight storing record weights
   std::map<Name, int> m_entropyList; // A map name:entropy storing record entropy
+
+  std::stack<Data> recordStack; // records stacked until their ancestors arrive
 
   // the var to tune
   double m_frequency; // Frequency of record generation (in hertz)
