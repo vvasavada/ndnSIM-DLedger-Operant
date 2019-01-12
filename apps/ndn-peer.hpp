@@ -87,7 +87,8 @@ protected:
   std::map<Name, int> m_weightList; // A map name:weight storing record weights
   std::map<Name, int> m_entropyList; // A map name:entropy storing record entropy
 
-  std::stack<Data> recordStack; // records stacked until their ancestors arrive
+  std::stack<Data> m_recordStack; // records stacked until their ancestors arrive
+  int m_reqCounter; // request counter that talies record fetching interests sent with data received back
 
   // the var to tune
   double m_frequency; // Frequency of record generation (in hertz)
@@ -101,8 +102,6 @@ protected:
 private:
   Name m_routablePrefix; // Node's prefix
   Name m_mcPrefix; // Multicast prefix
-
-  int m_recordNum; // instead of random hash, simply call record1, record2, ...
 };
 
 }

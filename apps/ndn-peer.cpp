@@ -67,7 +67,7 @@ Peer::GetTypeId()
 Peer::Peer()
   : m_firstTime(true)
   , m_syncFirstTime(true)
-  , m_recordNum(1)
+  , m_reqCounter(0)
 {
 }
 
@@ -287,6 +287,7 @@ Peer::FetchRecord(Name recordName)
   auto recordInterest = std::make_shared<Interest>(recordName);
   m_transmittedInterests(recordInterest, this, m_face);
   m_appLink->onReceiveInterest(*recordInterest);
+  m_reqCounter += 1;
 }
 
 // Callback that will be called when Data arrives
@@ -298,6 +299,8 @@ Peer::OnData(std::shared_ptr<const Data> data)
   auto dataNameUri = dataName.toUri();
   // continue, if data is not just a reply to norif and sync interest
   if (dataNameUri.find("NOTIF") == std::string::npos && dataNameUri.find("SYNC") == std::string::npos) {
+    m_reqCounter -= 1;
+    bool approvedBlocksInLedger = true;
     //TODO: PoA verification (just assume it is correct? Then do nothing)
 
     // Application-level semantics
@@ -321,8 +324,9 @@ Peer::OnData(std::shared_ptr<const Data> data)
         }
         it = m_ledger.find(approvedBlockName);
         if (it == m_ledger.end()) {
+          approvedBlocksInLedger = false;
           FetchRecord(approvedBlockName);
-          //TODO: stack the current record in m_recordStack
+          m_recordStack.push(*data);
         }
       }
       content.erase(0, pos + 1);
@@ -335,18 +339,24 @@ Peer::OnData(std::shared_ptr<const Data> data)
         return;
       }
 
-      //TODO: check if record is in ledger and perform above logic
+      it = m_ledger.find(approvedBlockName);
+      if (it == m_ledger.end()) {
+        approvedBlocksInLedger = false;
+        FetchRecord(approvedBlockName);
+        m_recordStack.push(*data);
+      }
+    }
+
+    if (approvedBlocksInLedger && m_reqCounter == 0){
+      while (!m_recordStack.empty()) {
+        auto record = m_recordStack.top();
+        m_recordStack.pop();
+        m_ledger.insert(std::pair<Name, Data>(record.getName(), record));
+      }
     }
 
 
     //TODO:
-      // if all approved blocks are found to be in m_ledger, sync is over
-      // (note there could be multiple chains getting synced at same time)
-      // (we can maintain a counter: increment counter when interest for fetching record is sent)
-      // (decrement when a record is obtained)
-      // (when counter is 0 and all approved blocks are found to in m_ledger, that means all chains have)
-      // (synced and it is now safe to start adding them to ledger)
-      // pop records from stack and add them to ledger
       // in above operation, if any ancestor fails to be retrieved or invalid, we discard all stacked future records
       // including current one (since they didnt verify ledger correctly)
     
