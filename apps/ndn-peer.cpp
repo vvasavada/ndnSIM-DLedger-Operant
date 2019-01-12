@@ -269,7 +269,7 @@ Peer::GenerateRecord()
   //TODO: increment weight (need recursive function)
 
   Name notifName(m_mcPrefix);
-  notifName.append("NOTIF").append(m_routablePrefix.toUri()).append(recordDigest);
+  notifName.append("NOTIF").append(m_routablePrefix.getSubName(1).toUri()).append(recordDigest);
   auto notif = std::make_shared<Interest>(notifName);
 
   NS_LOG_INFO("> NOTIF Interest " << notif->getName().toUri());

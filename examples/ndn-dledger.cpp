@@ -47,8 +47,6 @@ main(int argc, char *argv[])
 
   // Connecting nodes using two links
   PointToPointHelper p2p;
-  p2p.Install(nodes.Get(0), nodes.Get(1));
-  p2p.Install(nodes.Get(1), nodes.Get(2));
   for (int i = 0; i < node_num - 1; i++) {
     p2p.Install(nodes.Get(i), nodes.Get(i + 1));
   }
