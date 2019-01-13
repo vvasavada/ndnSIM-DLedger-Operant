@@ -184,6 +184,7 @@ Peer::StartApplication()
   // create genesis blocks in the DLedger
   for (int i = 0; i < m_genesisNum; i++) {
     Name genesisName(m_mcPrefix);
+    genesisName.append("genesis");
     genesisName.append("genesis" + std::to_string(i));
     auto genesis = std::make_shared<Data>(genesisName);
     m_tipList.push_back(genesisName);
@@ -286,6 +287,7 @@ Peer::FetchRecord(Name recordName)
 {
   auto recordInterest = std::make_shared<Interest>(recordName);
   m_transmittedInterests(recordInterest, this, m_face);
+  NS_LOG_INFO("< RECORD Interest " << recordInterest->getName().toUri());
   m_appLink->onReceiveInterest(*recordInterest);
   m_reqCounter += 1;
 }
@@ -314,6 +316,9 @@ Peer::OnData(std::shared_ptr<const Data> data)
     // if not, retrieve it
     auto content = ::ndn::encoding::readString(data->getContent());
     size_t pos = 0;
+    pos = content.find("***");
+    content = content.substr(0, pos);
+    pos = 0;
     std::string approvedBlock;
     while ((pos = content.find(":")) != std::string::npos) {
       approvedBlock = content.substr(0, pos);
@@ -325,6 +330,7 @@ Peer::OnData(std::shared_ptr<const Data> data)
         it = m_ledger.find(approvedBlockName);
         if (it == m_ledger.end()) {
           approvedBlocksInLedger = false;
+          NS_LOG_INFO("< FETCHING " << approvedBlockName.toUri());
           FetchRecord(approvedBlockName);
           m_recordStack.push(*data);
         }
@@ -387,7 +393,7 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
   else if (interestNameUri.find("SYNC") != std::string::npos) {
     auto tipDigest = interestName.getSubName(2);
     int iStartComponent = 0;
-    auto tipName = tipDigest.getSubName(iStartComponent, iStartComponent + 2);
+    auto tipName = tipDigest.getSubName(iStartComponent, 3);
     while (tipName.toUri() != "/") {
       auto it = m_ledger.find(tipName);
       if (it == m_ledger.end()) {
@@ -412,7 +418,7 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
         }
       }
       iStartComponent += 3;
-      tipName = tipDigest.getSubName(iStartComponent, iStartComponent + 2);
+      tipName = tipDigest.getSubName(iStartComponent, 3);
     }
 
     // else it is record fetching interest
