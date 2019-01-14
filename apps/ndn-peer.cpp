@@ -85,8 +85,8 @@ Peer::GetApprovedBlocks(Data data){
     Name approvedBlockName(approvedBlock);
     if (approvedBlockName.size() >= 2) { // ignoring empty strings when splitting (:tip1:tip2)
       approvedBlocks.push_back(approvedBlockName);
-      content.erase(0, pos + 1);
     }
+    content.erase(0, pos + 1);
   }
 
   // the last token
@@ -216,6 +216,7 @@ Peer::StartApplication()
     auto genesis = std::make_shared<Data>(genesisName);
     m_tipList.push_back(genesisName);
     m_ledger.insert(std::pair<Name, Data>(genesisName, *genesis));
+    m_weightList.insert(std::pair<Name, int>(genesisName, 1));
   }
 
   ScheduleNextGeneration();
@@ -387,7 +388,6 @@ Peer::OnData(std::shared_ptr<const Data> data)
         it = m_ledger.find(approvedBlockName);
         if (it == m_ledger.end()) {
           approvedBlocksInLedger = false;
-          NS_LOG_INFO("< FETCHING " << approvedBlockName.toUri());
           FetchRecord(approvedBlockName);
           m_recordStack.push(*data);
         }
