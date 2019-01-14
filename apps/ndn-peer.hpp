@@ -59,6 +59,10 @@ protected:
   GetSyncRandomize() const;
 
 private:
+  // Get approved blocks from record content
+  std::vector<Name>
+  GetApprovedBlocks(Data data);
+
   // Generates new record and sends notif interest
   void
   GenerateRecord();
@@ -70,6 +74,10 @@ private:
   // Fetches record using the given prefix
   void
   FetchRecord(Name prefix);
+
+  // Update weight of records
+  void
+  UpdateWeights(Data tail, std::vector<Name> visited);
 
 protected:
 
