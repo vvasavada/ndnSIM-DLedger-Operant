@@ -269,11 +269,6 @@ Peer::GenerateSync()
 void
 Peer::GenerateRecord()
 {
-  //TODO: need to add while loop for below code and
-  // keep selecting references until you get
-  // both of them produced by different node
-  // i.e. name shouldn't contain this node's routable prefix
-
   std::set<Name> selectedBlocks;
   for (int i = 0; i < m_referredNum; i++) {
     auto referenceIndex = rand() % (m_tipList.size() - 1);
@@ -392,7 +387,7 @@ Peer::OnData(std::shared_ptr<const Data> data)
   if (dataNameUri.find("NOTIF") == std::string::npos && dataNameUri.find("SYNC") == std::string::npos) {
     m_reqCounter -= 1;
     bool approvedBlocksInLedger = true;
-    //TODO: PoA verification (just assume it is correct? Then do nothing)
+    //TODO: PoA verification (just assume it is correct? Then do nothing) Zhiyi: yes
 
     // Application-level semantics
     auto it = m_ledger.find(dataName);
@@ -453,10 +448,9 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
     Name recordName(m_mcPrefix);
     recordName.append(interestName.getSubName(2).toUri());
     FetchRecord(recordName);
-
-    // else if it is sync interest (/mc-prefix/SYNC/tip1/tip2 ...)
-    // note that here tip1 will be /mc-prefix/creator-pref/name)
   }
+  // else if it is sync interest (/mc-prefix/SYNC/tip1/tip2 ...)
+  // note that here tip1 will be /mc-prefix/creator-pref/name)
   else if (interestNameUri.find("SYNC") != std::string::npos) {
     auto tipDigest = interestName.getSubName(2);
     int iStartComponent = 0;
@@ -485,9 +479,8 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
       iStartComponent += 3;
       tipName = tipDigest.getSubName(iStartComponent, 3);
     }
-
-    // else it is record fetching interest
   }
+  // else it is record fetching interest
   else {
     auto it = m_ledger.find(interestName);
     if (it != m_ledger.end()){
