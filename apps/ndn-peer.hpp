@@ -9,6 +9,19 @@
 namespace ns3 {
 namespace ndn {
 
+class LedgerRecord
+{
+public:
+  LedgerRecord(shared_ptr<const Data> contentObject,
+               int weight = 1, int entropy = 0, bool isArchived = false);
+public:
+  Data block;
+  int weight = 1;
+  int entropy = 0;
+  std::set<Name> approverNames;
+  bool isArchived = false;
+};
+
 class Peer: public App
 {
 public:
@@ -47,7 +60,8 @@ protected:
   void
   SetRandomize(const std::string& value, double frequency);
 
-  void SetGenerationRandomize(const std::string& value);
+  void
+  SetGenerationRandomize(const std::string& value);
 
   void
   SetSyncRandomize(const std::string& value);
@@ -77,7 +91,7 @@ private:
 
   // Update weight of records
   void
-  UpdateWeights(Data tail, std::vector<Name> visited);
+  UpdateWeightAndEntropy(Data tail, std::vector<Name> visited);
 
 protected:
 
@@ -91,11 +105,9 @@ protected:
   EventId m_syncSendEvent;
 
   std::vector<Name> m_tipList; // Tip list
-  std::map<Name, Data> m_ledger; // A map name:record storing entire ledger
-  std::map<Name, int> m_weightList; // A map name:weight storing record weights
-  std::map<Name, int> m_entropyList; // A map name:entropy storing record entropy
+  std::map<Name, LedgerRecord> m_ledger;
 
-  std::stack<Data> m_recordStack; // records stacked until their ancestors arrive
+  std::stack<LedgerRecord> m_recordStack; // records stacked until their ancestors arrive
   int m_reqCounter; // request counter that talies record fetching interests sent with data received back
 
   // the var to tune
