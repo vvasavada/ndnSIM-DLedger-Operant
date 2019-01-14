@@ -217,6 +217,7 @@ Peer::StartApplication()
     m_tipList.push_back(genesisName);
     m_ledger.insert(std::pair<Name, Data>(genesisName, *genesis));
     m_weightList.insert(std::pair<Name, int>(genesisName, 1));
+    //TODO: add to entropy list
   }
 
   ScheduleNextGeneration();
@@ -296,10 +297,12 @@ Peer::GenerateRecord()
   m_tipList.push_back(recordName);
   // add to weight
   m_weightList.insert(std::pair<Name, int>(recordName, 1));
+  //TODO: add to entropy list
 
   // update weights of directly or indirectly approved blocks
   std::vector<Name> visited;
   UpdateWeights(*record, visited);
+  //TODO: Update entropy
 
   Name notifName(m_mcPrefix);
   notifName.append("NOTIF").append(m_routablePrefix.getSubName(1).toUri()).append(recordDigest);
@@ -400,8 +403,10 @@ Peer::OnData(std::shared_ptr<const Data> data)
         m_recordStack.pop();
         m_ledger.insert(std::pair<Name, Data>(record.getName(), record));
         m_weightList.insert(std::pair<Name, int>(record.getName(), 1));
+        //TODO: add to entropy list
         std::vector<Name> visited;
         UpdateWeights(record, visited);
+        //TODO: update entropy
       }
     }
 
@@ -411,7 +416,6 @@ Peer::OnData(std::shared_ptr<const Data> data)
       // including current one (since they didnt verify ledger correctly)
     
     //TODO:
-      // increment weights of direct and indirect referred records
       // archive records that passes weight and entropy thresholds
 
   }
