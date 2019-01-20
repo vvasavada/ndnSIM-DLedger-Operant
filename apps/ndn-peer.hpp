@@ -114,7 +114,7 @@ protected:
   double m_frequency; // Frequency of record generation (in hertz)
   double m_syncFrequency; // Frequency of sync interest multicast
   int m_weightThreshold; // weight to be considered as archived block
-  int m_maxWeight; // max weight of a block which no new tips can refer
+  int m_maxEntropy; // max entropy of a block which no new tips can refer
   int m_entropyThreshold; // the number of peers to approve
   int m_genesisNum; // the number of genesis blocks
   int m_referredNum; // the number of referred blocks
