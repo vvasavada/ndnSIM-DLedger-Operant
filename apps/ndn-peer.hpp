@@ -122,6 +122,11 @@ protected:
 private:
   Name m_routablePrefix; // Node's prefix
   Name m_mcPrefix; // Multicast prefix
+
+public:
+  std::map<Name, LedgerRecord> & GetLedger() {
+    return m_ledger;
+  }
 };
 
 }
