@@ -46,8 +46,8 @@ Peer::GetTypeId()
                   MakeIntegerAccessor(&Peer::m_frequency), MakeIntegerChecker<int32_t>())
     .AddAttribute("SyncFrequency", "Frequency of sync interest multicast", IntegerValue(1),
                   MakeIntegerAccessor(&Peer::m_syncFrequency), MakeIntegerChecker<int32_t>())
-    .AddAttribute("WeightThreshold", "Weight to consider archive", IntegerValue(10),
-                  MakeIntegerAccessor(&Peer::m_weightThreshold), MakeIntegerChecker<int32_t>())
+    //.AddAttribute("WeightThreshold", "Weight to consider archive", IntegerValue(10),
+    //              MakeIntegerAccessor(&Peer::m_weightThreshold), MakeIntegerChecker<int32_t>())
     .AddAttribute("MaxEntropy", "The max entropy a block can gain", IntegerValue(15),
                   MakeIntegerAccessor(&Peer::m_maxEntropy), MakeIntegerChecker<int32_t>())
     .AddAttribute("EntropyThreshold", "Entropy value of peers", IntegerValue(5),
@@ -259,6 +259,7 @@ Peer::GenerateSync()
   }
 
   auto syncInterest = std::make_shared<Interest>(syncName);
+  NS_LOG_INFO("> SYNC Interest " << syncInterest->getName().toUri());
   m_transmittedInterests(syncInterest, this, m_face);
   m_appLink->onReceiveInterest(*syncInterest);
 
@@ -378,7 +379,7 @@ Peer::FetchRecord(Name recordName)
 {
   auto recordInterest = std::make_shared<Interest>(recordName);
   m_transmittedInterests(recordInterest, this, m_face);
-  NS_LOG_INFO("< RECORD Interest " << recordInterest->getName().toUri());
+  NS_LOG_INFO("> RECORD Interest " << recordInterest->getName().toUri());
   m_appLink->onReceiveInterest(*recordInterest);
   m_reqCounter += 1;
 }
