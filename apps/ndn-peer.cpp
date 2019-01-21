@@ -77,7 +77,7 @@ Peer::GetTypeId()
 Peer::Peer()
   : m_firstTime(true)
   , m_syncFirstTime(true)
-  , m_reqCounter(0)
+  //, m_reqCounter(0)
 {
 }
 
@@ -290,7 +290,6 @@ Peer::GenerateRecord()
   for (const auto& item : selectedBlocks) {
     recordContent += ":";
     recordContent += item.toUri();
-
     m_tipList.erase(std::remove(m_tipList.begin(),
                                 m_tipList.end(), item), m_tipList.end());
   }
@@ -381,7 +380,7 @@ Peer::FetchRecord(Name recordName)
   m_transmittedInterests(recordInterest, this, m_face);
   NS_LOG_INFO("> RECORD Interest " << recordInterest->getName().toUri());
   m_appLink->onReceiveInterest(*recordInterest);
-  m_reqCounter += 1;
+  //m_reqCounter += 1;
 }
 
 // Callback that will be called when Data arrives
@@ -393,7 +392,7 @@ Peer::OnData(std::shared_ptr<const Data> data)
   auto dataNameUri = dataName.toUri();
   // continue, if data is not just a reply to norif and sync interest
   if (dataNameUri.find("NOTIF") == std::string::npos && dataNameUri.find("SYNC") == std::string::npos) {
-    m_reqCounter -= 1;
+    //m_reqCounter -= 1;
     bool approvedBlocksInLedger = true;
     //TODO: PoA verification (just assume it is correct? Then do nothing) Zhiyi: yes
 
@@ -418,20 +417,26 @@ Peer::OnData(std::shared_ptr<const Data> data)
         if (it == m_ledger.end()) {
           approvedBlocksInLedger = false;
           FetchRecord(approvedBlockName);
-          m_recordStack.push(LedgerRecord(data));
         } else {
           if (it->second.entropy > m_maxEntropy) {
             return;
           }
         }
+        m_recordStack.push(LedgerRecord(data));
       }
     }
 
-    if (approvedBlocksInLedger && m_reqCounter == 0) {
+    if (approvedBlocksInLedger) { // && m_reqCounter == 0) {
       while (!m_recordStack.empty()) {
         auto record = m_recordStack.top();
         m_recordStack.pop();
+        m_tipList.push_back(record.block.getName());
         m_ledger.insert(std::pair<Name, LedgerRecord>(record.block.getName(), record));
+        approvedBlocks = GetApprovedBlocks(record.block);
+        for (size_t i = 0; i != approvedBlocks.size(); i++) {
+          m_tipList.erase(std::remove(m_tipList.begin(),
+                                 m_tipList.end(), approvedBlocks[i]), m_tipList.end());
+        }
         std::vector<Name> visited;
         UpdateWeightAndEntropy(record.block, visited);
       }
