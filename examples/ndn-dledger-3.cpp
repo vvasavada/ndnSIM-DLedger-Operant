@@ -31,14 +31,37 @@ failLink(Ptr<NetDevice> nd)
 void 
 inspectRecords()
 {
+  map<ns3::ndn::Name, int> namemap;
+
   cout << "TIME: " << Simulator::Now() << endl;
   for(auto node = NodeList::Begin(); node != NodeList::End(); ++ node) {
-    //auto peer = (*node)->GetObject<ns3::ndn::Peer>();
     auto peer = DynamicCast<ns3::ndn::Peer>((*node)->GetApplication(0));
     auto & ledger = peer->GetLedger();
     cout << "Node Id: " << (*node)->GetId() << " Ledger Size: " << ledger.size() << endl;
+    cout << "digraph{" << endl;
+
+    namemap.clear();
+    int cnt = 0;
+    for(auto & it : ledger){
+      namemap[it.first] = ++ cnt;
+    }
+
+    for(auto & it : ledger) {
+      //cout << namemap[it.first];
+      cout << "\"" << it.first.toUri() << "\"";
+      if(it.second.approverNames.size() > 0){
+        cout << " -> {";
+        for(auto & approver : it.second.approverNames){
+          //cout << " " << namemap[approver];
+          cout << "\"" << approver.toUri() << "\"";
+        }
+        cout << " }";
+      }
+      cout << endl;
+    }
+    cout << "}" << endl;
   }
-  Simulator::Schedule(Seconds(10.0), inspectRecords);
+  Simulator::Schedule(Seconds(20.0), inspectRecords);
 }
 
 int
@@ -110,7 +133,7 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(31)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
-  Simulator::Schedule(Seconds(10.0), inspectRecords);
+  Simulator::Schedule(Seconds(20.0), inspectRecords);
   Simulator::Stop(Seconds (100.0));
 
   Simulator::Run();

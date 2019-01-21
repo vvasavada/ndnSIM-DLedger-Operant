@@ -359,7 +359,7 @@ Peer::UpdateWeightAndEntropy(Data tail, std::vector<Name> visited) {
         auto it = m_ledger.find(approvedBlock);
         if (it != m_ledger.end()) { // this should always return true
           it->second.weight += 1;
-          it->second.approverNames.insert(tail.getName().getPrefix(2));
+          it->second.approverNames.insert(tail.getName().getPrefix(3));
           it->second.entropy = it->second.approverNames.size();
 
           if (it->second.entropy >= m_entropyThreshold) {
