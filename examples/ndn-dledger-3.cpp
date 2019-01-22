@@ -31,29 +31,28 @@ failLink(Ptr<NetDevice> nd)
 void 
 inspectRecords()
 {
-  map<ns3::ndn::Name, int> namemap;
+  map<ns3::ndn::Name, std::string> namemap;
 
-  cout << "TIME: " << Simulator::Now() << endl;
   for(auto node = NodeList::Begin(); node != NodeList::End(); ++ node) {
     auto peer = DynamicCast<ns3::ndn::Peer>((*node)->GetApplication(0));
     auto & ledger = peer->GetLedger();
+    cout << "================================================" << endl;
+    cout << "TIME: " << Simulator::Now() << endl;
     cout << "Node Id: " << (*node)->GetId() << " Ledger Size: " << ledger.size() << endl;
     cout << "digraph{" << endl;
 
     namemap.clear();
     int cnt = 0;
     for(auto & it : ledger){
-      namemap[it.first] = ++ cnt;
+      namemap[it.first] = it.first.toUri().substr(9, 16);
     }
 
     for(auto & it : ledger) {
-      //cout << namemap[it.first];
-      cout << "\"" << it.first.toUri() << "\"";
+      cout << "\"" << namemap[it.first] << "\"";
       if(it.second.approverNames.size() > 0){
         cout << " -> {";
         for(auto & approver : it.second.approverNames){
-          //cout << " " << namemap[approver];
-          cout << "\"" << approver.toUri() << "\"";
+          cout << " \"" << namemap[approver] << "\"";
         }
         cout << " }";
       }
