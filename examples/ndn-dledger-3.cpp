@@ -133,7 +133,7 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(31)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
-  Simulator::Schedule(Seconds(20.0), inspectRecords);
+  //Simulator::Schedule(Seconds(20.0), inspectRecords);
   Simulator::Stop(Seconds (100.0));
 
   Simulator::Run();

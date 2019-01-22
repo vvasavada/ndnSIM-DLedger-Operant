@@ -15,7 +15,7 @@ public:
   LedgerRecord(shared_ptr<const Data> contentObject,
                int weight = 1, int entropy = 0, bool isArchived = false);
 public:
-  Data block;
+  shared_ptr<const Data> block;
   int weight = 1;
   int entropy = 0;
   std::set<Name> approverNames;
@@ -75,7 +75,7 @@ protected:
 private:
   // Get approved blocks from record content
   std::vector<Name>
-  GetApprovedBlocks(Data data);
+  GetApprovedBlocks(shared_ptr<const Data> data);
 
   // Generates new record and sends notif interest
   void
@@ -91,7 +91,7 @@ private:
 
   // Update weight of records
   void
-  UpdateWeightAndEntropy(Data tail, std::vector<Name> visited);
+  UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::vector<Name> visited);
 
 protected:
 

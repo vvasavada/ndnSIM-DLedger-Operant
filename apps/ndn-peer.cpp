@@ -26,7 +26,7 @@ NS_OBJECT_ENSURE_REGISTERED(Peer);
 
 LedgerRecord::LedgerRecord(shared_ptr<const Data> contentObject,
                            int weight, int entropy, bool isArchived)
-  : block(*contentObject)
+  : block(contentObject)
   , weight(weight)
   , entropy(entropy)
   , isArchived(isArchived)
@@ -82,10 +82,10 @@ Peer::Peer()
 }
 
 std::vector<Name>
-Peer::GetApprovedBlocks(Data data)
+Peer::GetApprovedBlocks(shared_ptr<const Data> data)
 {
   std::vector<Name> approvedBlocks;
-  auto content = ::ndn::encoding::readString(data.getContent());
+  auto content = ::ndn::encoding::readString(data->getContent());
   size_t pos = 0;
   pos = content.find("***");
   content = content.substr(0, pos);
@@ -318,7 +318,7 @@ Peer::GenerateRecord()
 
   // update weights of directly or indirectly approved blocks
   std::vector<Name> visited;
-  UpdateWeightAndEntropy(*record, visited);
+  UpdateWeightAndEntropy(record, visited);
 
   Name notifName(m_mcPrefix);
   notifName.append("NOTIF").append(m_routablePrefix.getSubName(1).toUri()).append(recordDigest);
@@ -334,8 +334,8 @@ Peer::GenerateRecord()
 
 // Update weights
 void
-Peer::UpdateWeightAndEntropy(Data tail, std::vector<Name> visited) {
-  auto tailName = tail.getName();
+Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::vector<Name> visited) {
+  auto tailName = tail->getName();
   visited.push_back(tailName);
   if (tailName.toUri().find("genesis") != std::string::npos) {
     return;
@@ -358,12 +358,15 @@ Peer::UpdateWeightAndEntropy(Data tail, std::vector<Name> visited) {
         auto it = m_ledger.find(approvedBlock);
         if (it != m_ledger.end()) { // this should always return true
           it->second.weight += 1;
-          it->second.approverNames.insert(tail.getName().getPrefix(3));
+          it->second.approverNames.insert(tail->getName().getPrefix(3));
           it->second.entropy = it->second.approverNames.size();
 
           if (it->second.entropy >= m_entropyThreshold) {
             it->second.isArchived = true;
           }
+        }else{
+          NS_LOG_ERROR("it == m_ledger.end(): " << approvedBlock);
+          throw 0;
         }
         processed.push_back(approvedBlock);
         UpdateWeightAndEntropy(m_ledger.find(approvedBlock)->second.block, visited);
@@ -388,6 +391,9 @@ void
 Peer::OnData(std::shared_ptr<const Data> data)
 {
   NS_LOG_FUNCTION(this << data);
+
+  NS_LOG_INFO("OnData(): DATA= " << data->getName().toUri());
+
   auto dataName = data->getName();
   auto dataNameUri = dataName.toUri();
   // continue, if data is not just a reply to norif and sync interest
@@ -406,32 +412,41 @@ Peer::OnData(std::shared_ptr<const Data> data)
     // check if approved records have entropy less than max entropy
     // if not, check if record is in ledger
     // if not, retrieve it
-    std::vector<Name> approvedBlocks = GetApprovedBlocks(*data);
+    std::vector<Name> approvedBlocks = GetApprovedBlocks(data);
+    m_recordStack.push(LedgerRecord(data));
     for (size_t i = 0; i != approvedBlocks.size(); i++) {
       auto approvedBlockName = approvedBlocks[i];
       if (approvedBlockName.size() >= 2) { // ignoring empty strings when splitting (:tip1:tip2)
         if (approvedBlockName.get(1) == dataName.get(1)) { // recordname format: /dledger/node/hash
+          m_recordStack.pop();
+          NS_LOG_INFO("INTERLOCK VIOLATION " << approvedBlockName);
           return;
         }
         it = m_ledger.find(approvedBlockName);
         if (it == m_ledger.end()) {
           approvedBlocksInLedger = false;
           FetchRecord(approvedBlockName);
+          NS_LOG_INFO("GO TO FETCH " << approvedBlockName);
         } else {
+          NS_LOG_INFO("EXISTS APPROVAL " << approvedBlockName);
           if (it->second.entropy > m_maxEntropy) {
             return;
           }
         }
-        m_recordStack.push(LedgerRecord(data));
+      }else{
+        NS_LOG_INFO("IGNORED " << approvedBlockName);
       }
     }
 
     if (approvedBlocksInLedger) { // && m_reqCounter == 0) {
       while (!m_recordStack.empty()) {
+        NS_LOG_INFO("STACK SIZE " << m_recordStack.size());
+
         auto record = m_recordStack.top();
         m_recordStack.pop();
-        m_tipList.push_back(record.block.getName());
-        m_ledger.insert(std::pair<Name, LedgerRecord>(record.block.getName(), record));
+        NS_LOG_INFO("POPED " << record.block->getName());
+        m_tipList.push_back(record.block->getName());
+        m_ledger.insert(std::pair<Name, LedgerRecord>(record.block->getName(), record));
         approvedBlocks = GetApprovedBlocks(record.block);
         for (size_t i = 0; i != approvedBlocks.size(); i++) {
           m_tipList.erase(std::remove(m_tipList.begin(),
@@ -496,7 +511,7 @@ Peer::OnInterest(std::shared_ptr<const Interest> interest)
   else {
     auto it = m_ledger.find(interestName);
     if (it != m_ledger.end()){
-      m_appLink->onReceiveData(it->second.block);
+      m_appLink->onReceiveData(*it->second.block);
     }
     else {
       // This node doesn't have as well so it tries to fetch
