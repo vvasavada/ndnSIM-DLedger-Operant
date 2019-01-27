@@ -350,7 +350,7 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name> visited
     // this approvedblock shouldnt be previously processed to avoid increasing weight multiple times
     // (this condition is when multiple references point to same block)
     auto search = processed.find(approvedBlock);
-    if (search != processed.end()) {
+    if (search == processed.end()) {
 
       // do not increase weight if block has been previously visited
       // (this condition is useful when different chains merge)
@@ -361,7 +361,7 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name> visited
         if (it != m_ledger.end()) { // this should always return true
 
           if (it->second.entropy >= m_maxEntropy) {
-            return;
+            continue;
           }
 
           it->second.weight += 1;
@@ -371,7 +371,7 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name> visited
             it->second.isArchived = true;
           }
           if (it->second.entropy >= m_maxEntropy) {
-            return;
+            continue;
           }
           processed.insert(approvedBlock);
           UpdateWeightAndEntropy(m_ledger.find(approvedBlock)->second.block, visited);

@@ -77,7 +77,7 @@ main(int argc, char *argv[])
   cmd.Parse(argc, argv);
 
   // Creating nodes
-  int node_num = 3;
+  int node_num = 5;
   NodeContainer nodes;
   nodes.Create(node_num);
 
@@ -115,7 +115,6 @@ main(int argc, char *argv[])
     // sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
     sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
     sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(2));
-
     sleepingAppHelper.SetAttribute("MaxEntropy", IntegerValue(3));
     sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(2));
 
@@ -135,10 +134,17 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(31)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
-  //Simulator::Schedule(Seconds(20.0), inspectRecords);
-  Simulator::Stop(Seconds (100.0));
+  Simulator::Schedule(Seconds(20.0), inspectRecords);
+  Simulator::Stop(Seconds (45.0));
+
+  auto start_time = std::chrono::steady_clock::now();
 
   Simulator::Run();
+
+  auto end_time = std::chrono::steady_clock::now();
+  std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count() 
+            << " secs" << std::endl;
+
   Simulator::Destroy ();
 
   return 0;
