@@ -12,6 +12,7 @@
 #include "ns3/double.h"
 
 #include <stdlib.h>
+#include <math.h>
 #include "../ndn-cxx/src/util/sha256.hpp"
 #include "../ndn-cxx/src/encoding/block-helpers.hpp"
 #include "../ndn-cxx/src/encoding/tlv.hpp"
@@ -319,6 +320,8 @@ Peer::GenerateRecord()
   // update weights of directly or indirectly approved blocks
   std::set<Name> visited;
   UpdateWeightAndEntropy(record, visited);
+  NS_LOG_INFO("NewRecord: visited records size: " << visited.size()
+              << " unconfirmed depth: " << log2(visited.size() + 1));
 
   Name notifName(m_mcPrefix);
   notifName.append("NOTIF").append(m_routablePrefix.getSubName(1).toUri()).append(recordDigest);
@@ -334,12 +337,10 @@ Peer::GenerateRecord()
 
 // Update weights
 void
-Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name> visited) {
+Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name>& visited) {
   auto tailName = tail->getName();
   visited.insert(tailName);
-  // if (tailName.toUri().find("genesis") != std::string::npos) {
-  //   return;
-  // }
+  // std::cout << "visited set size: " << visited.size() << std::endl;
 
   std::vector<Name> approvedBlocks = GetApprovedBlocks(tail);
   std::set<Name> processed;
@@ -359,11 +360,6 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name> visited
 
         auto it = m_ledger.find(approvedBlock);
         if (it != m_ledger.end()) { // this should always return true
-
-          if (it->second.entropy >= m_maxEntropy) {
-            continue;
-          }
-
           it->second.weight += 1;
           it->second.approverNames.insert(tail->getName().getPrefix(3));
           it->second.entropy = it->second.approverNames.size();
@@ -443,7 +439,8 @@ Peer::OnData(std::shared_ptr<const Data> data)
             return;
           }
         }
-      }else{
+      }
+      else {
         NS_LOG_INFO("IGNORED " << approvedBlockName);
       }
     }
@@ -464,6 +461,8 @@ Peer::OnData(std::shared_ptr<const Data> data)
         }
         std::set<Name> visited;
         UpdateWeightAndEntropy(record.block, visited);
+        NS_LOG_INFO("ReceiveRecord: visited records size: " << visited.size()
+              << " unconfirmed depth: " << log2(visited.size() + 1));
       }
     }
 
