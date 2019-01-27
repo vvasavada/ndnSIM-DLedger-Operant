@@ -18,7 +18,7 @@ public:
   shared_ptr<const Data> block;
   int weight = 1;
   int entropy = 0;
-  std::set<Name> approverNames;
+  std::set<std::string> approverNames;
   bool isArchived = false;
 };
 
@@ -74,7 +74,7 @@ protected:
 
 private:
   // Get approved blocks from record content
-  std::vector<Name>
+  std::vector<std::string>
   GetApprovedBlocks(shared_ptr<const Data> data);
 
   // Generates new record and sends notif interest
@@ -91,7 +91,7 @@ private:
 
   // Update weight of records
   void
-  UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name>& visited);
+  UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>& visited);
 
 protected:
 
@@ -104,7 +104,7 @@ protected:
   EventId m_sendEvent; ///< @brief EventId of pending "send packet" event
   EventId m_syncSendEvent;
 
-  std::vector<Name> m_tipList; // Tip list
+  std::vector<std::string> m_tipList; // Tip list
   std::map<std::string, LedgerRecord> m_ledger;
 
   std::stack<LedgerRecord> m_recordStack; // records stacked until their ancestors arrive

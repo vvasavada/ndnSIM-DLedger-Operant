@@ -52,7 +52,7 @@ inspectRecords()
       if(it.second.approverNames.size() > 0){
         cout << " -> {";
         for(auto & approver : it.second.approverNames) {
-          cout << " \"" << namemap[approver.toUri()] << "\"";
+          cout << " \"" << namemap[approver] << "\"";
         }
         cout << " }";
       }
@@ -60,7 +60,7 @@ inspectRecords()
     }
     cout << "}" << endl;
   }
-  Simulator::Schedule(Seconds(20.0), inspectRecords);
+  Simulator::Schedule(Seconds(100.0), inspectRecords);
 }
 
 int
