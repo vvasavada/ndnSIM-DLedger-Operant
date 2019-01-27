@@ -105,7 +105,7 @@ protected:
   EventId m_syncSendEvent;
 
   std::vector<Name> m_tipList; // Tip list
-  std::map<Name, LedgerRecord> m_ledger;
+  std::map<std::string, LedgerRecord> m_ledger;
 
   std::stack<LedgerRecord> m_recordStack; // records stacked until their ancestors arrive
   int m_reqCounter; // request counter that talies record fetching interests sent with data received back
@@ -124,7 +124,7 @@ private:
   Name m_mcPrefix; // Multicast prefix
 
 public:
-  std::map<Name, LedgerRecord> & GetLedger() {
+  std::map<std::string, LedgerRecord> & GetLedger() {
     return m_ledger;
   }
 };

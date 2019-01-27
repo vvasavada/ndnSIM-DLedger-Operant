@@ -31,7 +31,7 @@ failLink(Ptr<NetDevice> nd)
 void
 inspectRecords()
 {
-  map<ns3::ndn::Name, std::string> namemap;
+  map<std::string, std::string> namemap;
 
   for(auto node = NodeList::Begin(); node != NodeList::End(); ++ node) {
     auto peer = DynamicCast<ns3::ndn::Peer>((*node)->GetApplication(0));
@@ -44,7 +44,7 @@ inspectRecords()
     namemap.clear();
     int cnt = 0;
     for(auto & it : ledger){
-      namemap[it.first] = it.first.toUri().substr(9, 16);
+      namemap[it.first] = it.first.substr(9, 16);
     }
 
     for(auto & it : ledger) {
@@ -52,7 +52,7 @@ inspectRecords()
       if(it.second.approverNames.size() > 0){
         cout << " -> {";
         for(auto & approver : it.second.approverNames) {
-          cout << " \"" << namemap[approver] << "\"";
+          cout << " \"" << namemap[approver.toUri()] << "\"";
         }
         cout << " }";
       }
