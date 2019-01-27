@@ -317,7 +317,7 @@ Peer::GenerateRecord()
   m_tipList.push_back(recordName);
 
   // update weights of directly or indirectly approved blocks
-  std::vector<Name> visited;
+  std::set<Name> visited;
   UpdateWeightAndEntropy(record, visited);
 
   Name notifName(m_mcPrefix);
@@ -334,42 +334,52 @@ Peer::GenerateRecord()
 
 // Update weights
 void
-Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::vector<Name> visited) {
+Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name> visited) {
   auto tailName = tail->getName();
-  visited.push_back(tailName);
-  if (tailName.toUri().find("genesis") != std::string::npos) {
-    return;
-  }
+  visited.insert(tailName);
+  // if (tailName.toUri().find("genesis") != std::string::npos) {
+  //   return;
+  // }
 
   std::vector<Name> approvedBlocks = GetApprovedBlocks(tail);
-  std::vector<Name> processed;
+  std::set<Name> processed;
 
   for (size_t i = 0; i != approvedBlocks.size(); i++) {
     auto approvedBlock = approvedBlocks[i];
 
     // this approvedblock shouldnt be previously processed to avoid increasing weight multiple times
     // (this condition is when multiple references point to same block)
-    if (std::find(processed.begin(), processed.end(), approvedBlock) == processed.end()) {
+    auto search = processed.find(approvedBlock);
+    if (search != processed.end()) {
 
       // do not increase weight if block has been previously visited
       // (this condition is useful when different chains merge)
-      if (std::find(visited.begin(), visited.end(), approvedBlock) == visited.end()) {
+      auto search2 = visited.find(approvedBlock);
+      if (search2 == visited.end()) {
 
         auto it = m_ledger.find(approvedBlock);
         if (it != m_ledger.end()) { // this should always return true
+
+          if (it->second.entropy >= m_maxEntropy) {
+            return;
+          }
+
           it->second.weight += 1;
           it->second.approverNames.insert(tail->getName().getPrefix(3));
           it->second.entropy = it->second.approverNames.size();
-
           if (it->second.entropy >= m_entropyThreshold) {
             it->second.isArchived = true;
           }
-        }else{
+          if (it->second.entropy >= m_maxEntropy) {
+            return;
+          }
+          processed.insert(approvedBlock);
+          UpdateWeightAndEntropy(m_ledger.find(approvedBlock)->second.block, visited);
+        }
+        else {
           NS_LOG_ERROR("it == m_ledger.end(): " << approvedBlock);
           throw 0;
         }
-        processed.push_back(approvedBlock);
-        UpdateWeightAndEntropy(m_ledger.find(approvedBlock)->second.block, visited);
       }
     }
   }
@@ -452,12 +462,12 @@ Peer::OnData(std::shared_ptr<const Data> data)
           m_tipList.erase(std::remove(m_tipList.begin(),
                                  m_tipList.end(), approvedBlocks[i]), m_tipList.end());
         }
-        std::vector<Name> visited;
+        std::set<Name> visited;
         UpdateWeightAndEntropy(record.block, visited);
       }
     }
 
-    //TODO: the above records recursively obtained shouldnt be considered for approval when new 
+    //TODO: the above records recursively obtained shouldnt be considered for approval when new
     // record is generated
   }
 }

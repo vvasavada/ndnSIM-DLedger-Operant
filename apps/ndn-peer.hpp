@@ -91,7 +91,7 @@ private:
 
   // Update weight of records
   void
-  UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::vector<Name> visited);
+  UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<Name> visited);
 
 protected:
 

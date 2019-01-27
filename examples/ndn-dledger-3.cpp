@@ -28,7 +28,7 @@ failLink(Ptr<NetDevice> nd)
   nd->SetAttribute ("ReceiveErrorModel", PointerValue(error));
 }
 
-void 
+void
 inspectRecords()
 {
   map<ns3::ndn::Name, std::string> namemap;
@@ -111,10 +111,13 @@ main(int argc, char *argv[])
     sleepingAppHelper.SetAttribute("Routable-Prefix", StringValue(prefix));
     sleepingAppHelper.SetAttribute("Multicast-Prefix", StringValue("/dledger"));
     sleepingAppHelper.SetAttribute("Frequency", IntegerValue(1));
-    //sleepingAppHelper.SetAttribute("WeightThreshold", IntegerValue(10));
-    //sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
+    // sleepingAppHelper.SetAttribute("WeightThreshold", IntegerValue(10));
+    // sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
     sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
     sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(2));
+
+    sleepingAppHelper.SetAttribute("MaxEntropy", IntegerValue(3));
+    sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(2));
 
     sleepingAppHelper.Install(object).Start(Seconds(2));
 
