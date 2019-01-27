@@ -8,6 +8,7 @@
 #include "ns3/ndnSIM/apps/ndn-peer.hpp"
 #include "ns3/mpi-interface.h"
 #include <map>
+#include <chrono>
 
 #ifdef NS3_MPI
 #include <mpi.h>

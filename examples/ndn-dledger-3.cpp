@@ -7,6 +7,7 @@
 #include "ns3/ndnSIM-module.h"
 #include "ns3/ndnSIM/apps/ndn-peer.hpp"
 #include <map>
+#include <chrono>
 
 using namespace std;
 using namespace ns3;
