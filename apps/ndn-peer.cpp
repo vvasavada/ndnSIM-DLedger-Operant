@@ -87,24 +87,21 @@ Peer::GetApprovedBlocks(shared_ptr<const Data> data)
 {
   std::vector<std::string> approvedBlocks;
   auto content = ::ndn::encoding::readString(data->getContent());
-  size_t pos = 0;
-  pos = content.find("***");
-  content = content.substr(0, pos);
-  pos = 0;
-  std::string approvedBlock;
-  while ((pos = content.find(":")) != std::string::npos) {
-    approvedBlock = content.substr(0, pos);
-    //Name approvedBlockName(approvedBlock);
-    if (std::count(approvedBlock.begin(), approvedBlock.end(), '/') >= 2) { // ignoring empty strings when splitting (:tip1:tip2)
-      approvedBlocks.push_back(approvedBlock);
+  int nSlash = 0;
+  const char *st, *ed;
+  for(st = ed = content.c_str(); *ed && *ed != '*'; ed ++){
+    if(*ed == ':'){
+      if(nSlash >= 2){
+        approvedBlocks.push_back(std::string(st, ed));
+      }
+      nSlash = 0;
+      st = ed + 1;
+    }else if(*ed == '/'){
+      nSlash ++;
     }
-    content.erase(0, pos + 1);
   }
-
-  // the last token
-  //Name approvedBlockName(content);
-  if (std::count(approvedBlock.begin(), approvedBlock.end(), '/') >= 2) { // ignoring empty strings when splitting (:tip1:tip2)
-    approvedBlocks.push_back(approvedBlock);
+  if(nSlash >= 2){
+    approvedBlocks.push_back(std::string(st, ed));
   }
 
   return approvedBlocks;
@@ -339,8 +336,8 @@ Peer::GenerateRecord()
 // Update weights
 void
 Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>& visited) {
-  auto tailName = tail->getName();
-  visited.insert(tailName.toUri());
+  auto tailName = tail->getName().toUri();
+  visited.insert(tailName);
   // std::cout << "visited set size: " << visited.size() << std::endl;
 
   std::vector<std::string> approvedBlocks = GetApprovedBlocks(tail);
@@ -362,7 +359,7 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>&
         auto it = m_ledger.find(approvedBlock);
         if (it != m_ledger.end()) { // this should always return true
           it->second.weight += 1;
-          it->second.approverNames.insert(tail->getName().getPrefix(3).toUri());
+          it->second.approverNames.insert(tailName);
           it->second.entropy = it->second.approverNames.size();
           if (it->second.entropy >= m_entropyThreshold) {
             it->second.isArchived = true;
@@ -371,7 +368,7 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>&
             continue;
           }
           processed.insert(approvedBlock);
-          UpdateWeightAndEntropy(m_ledger.find(approvedBlock)->second.block, visited);
+          UpdateWeightAndEntropy(it->second.block, visited);
         }
         else {
           NS_LOG_ERROR("it == m_ledger.end(): " << approvedBlock);
