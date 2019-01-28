@@ -30,6 +30,14 @@ failLink(Ptr<NetDevice> nd)
 }
 
 void
+upLink(Ptr<NetDevice> nd)
+{
+  Ptr<RateErrorModel> error = CreateObject<RateErrorModel> ();
+  error->SetAttribute ("ErrorRate", DoubleValue (-0.1));
+  nd->SetAttribute ("ReceiveErrorModel", PointerValue(error));
+}
+
+void
 inspectRecords()
 {
   map<std::string, std::string> namemap;
@@ -61,7 +69,7 @@ inspectRecords()
     }
     cout << "}" << endl;
   }
-  Simulator::Schedule(Seconds(100.0), inspectRecords);
+  Simulator::Schedule(Seconds(20.0), inspectRecords);
 }
 
 int
@@ -78,7 +86,7 @@ main(int argc, char *argv[])
   cmd.Parse(argc, argv);
 
   // Creating nodes
-  int node_num = 5;
+  int node_num = 8;
   NodeContainer nodes;
   nodes.Create(node_num);
 
@@ -135,8 +143,12 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(31)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
-  // Simulator::Schedule(Seconds(20.0), inspectRecords);
-  Simulator::Stop(Seconds(100.0));
+  Simulator::Schedule(Seconds(20.0), inspectRecords);
+
+  Simulator::Schedule(Seconds(25.0), failLink, nodes.Get(4)->GetDevice(0));
+  Simulator::Schedule(Seconds(65.0), upLink, nodes.Get(4)->GetDevice(0));
+
+  Simulator::Stop(Seconds(105.0));
 
   auto start_time = std::chrono::steady_clock::now();
 

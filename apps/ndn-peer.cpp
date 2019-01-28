@@ -417,12 +417,12 @@ Peer::OnData(std::shared_ptr<const Data> data)
     // if not, check if record is in ledger
     // if not, retrieve it
     std::vector<std::string> approvedBlocks = GetApprovedBlocks(data);
-    m_recordStack.push(LedgerRecord(data));
+    m_recordStack.push_back(LedgerRecord(data));
     for (size_t i = 0; i != approvedBlocks.size(); i++) {
       auto approvedBlockName = Name(approvedBlocks[i]);
       if (approvedBlockName.size() >= 2) { // ignoring empty strings when splitting (:tip1:tip2)
         if (approvedBlockName.get(1) == dataName.get(1)) { // recordname format: /dledger/node/hash
-          m_recordStack.pop();
+          m_recordStack.pop_back();
           NS_LOG_INFO("INTERLOCK VIOLATION " << approvedBlockName);
           return;
         }
@@ -444,15 +444,29 @@ Peer::OnData(std::shared_ptr<const Data> data)
     }
 
     if (approvedBlocksInLedger) { // && m_reqCounter == 0) {
-      while (!m_recordStack.empty()) {
+      ///////
+      //while (!m_recordStack.empty()) {
+      for(auto it = m_recordStack.rbegin(); it != m_recordStack.rend(); ){
         NS_LOG_INFO("STACK SIZE " << m_recordStack.size());
 
-        auto record = m_recordStack.top();
-        m_recordStack.pop();
-        NS_LOG_INFO("POPED " << record.block->getName());
-        m_tipList.push_back(record.block->getName().toUri());
-        m_ledger.insert(std::pair<std::string, LedgerRecord>(record.block->getName().toUri(), record));
+        const auto& record = *it;
+        auto recordName = record.block->getName().toUri();
         approvedBlocks = GetApprovedBlocks(record.block);
+        bool ready = true;
+        for(const auto& approveeName : approvedBlocks){
+          if(m_ledger.find(approveeName) == m_ledger.end()){
+            ready = false;
+            break;
+          }
+        }
+        if(!ready){
+          it ++;
+          continue;
+        }
+        
+        NS_LOG_INFO("POPED " << record.block->getName());
+        m_tipList.push_back(recordName);
+        m_ledger.insert(std::pair<std::string, LedgerRecord>(record.block->getName().toUri(), record));
         for (size_t i = 0; i != approvedBlocks.size(); i++) {
           m_tipList.erase(std::remove(m_tipList.begin(),
                                  m_tipList.end(), approvedBlocks[i]), m_tipList.end());
@@ -461,6 +475,8 @@ Peer::OnData(std::shared_ptr<const Data> data)
         UpdateWeightAndEntropy(record.block, visited);
         NS_LOG_INFO("ReceiveRecord: visited records size: " << visited.size()
               << " unconfirmed depth: " << log2(visited.size() + 1));
+
+        it = decltype(it)(m_recordStack.erase(std::next(it).base()));
       }
     }
 

@@ -5,6 +5,7 @@
 #include "ns3/ndnSIM/apps/ndn-consumer.hpp"
 
 #include <stack>
+#include <list>
 
 namespace ns3 {
 namespace ndn {
@@ -107,7 +108,7 @@ protected:
   std::vector<std::string> m_tipList; // Tip list
   std::map<std::string, LedgerRecord> m_ledger;
 
-  std::stack<LedgerRecord> m_recordStack; // records stacked until their ancestors arrive
+  std::list<LedgerRecord> m_recordStack; // records stacked until their ancestors arrive
   int m_reqCounter; // request counter that talies record fetching interests sent with data received back
 
   // the var to tune
