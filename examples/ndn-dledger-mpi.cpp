@@ -75,6 +75,18 @@ inspectRecords()
   Simulator::Schedule(Seconds(100.0), inspectRecords);
 }
 
+std::chrono::steady_clock::time_point start_time;
+
+void
+showProgress(){
+  auto end_time = std::chrono::steady_clock::now();
+  static int progress = 0;
+  std::cout << ++ progress << "% "
+            << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count()
+            << std::endl;
+  Simulator::Schedule(Seconds(1.0), showProgress);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -159,9 +171,12 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
   // Simulator::Schedule(Seconds(20.0), inspectRecords);
+  if(systemId == 0){
+    Simulator::Schedule(Seconds(1.0), showProgress);
+  }
   Simulator::Stop(Seconds(100.0));
 
-  auto start_time = std::chrono::steady_clock::now();
+  start_time = std::chrono::steady_clock::now();
 
   Simulator::Run();
 
