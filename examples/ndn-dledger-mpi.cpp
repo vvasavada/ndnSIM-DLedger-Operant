@@ -29,6 +29,11 @@ using ns3::ndn::GlobalRoutingHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
+const int NodesCnt = 30;
+const int EntropyThreshold = 10;
+const int MaxEntropy = 15;
+const double TotalTime = 150.0;
+
 void
 failLink(Ptr<NetDevice> nd)
 {
@@ -108,7 +113,7 @@ showProgress(){
   auto & ledger = peer->GetLedger();
   int unconfirmedCnt = 0;
   for(const auto & record : ledger){
-    if(record.second.entropy < 2) { // EntropyThreshold -> confirm
+    if(record.second.entropy < EntropyThreshold) { // EntropyThreshold -> confirm
       unconfirmedCnt ++;
     }
   }
@@ -116,7 +121,7 @@ showProgress(){
   std::cout << " Unconfirmed Count=" << unconfirmedCnt;
   std::cout << std::endl;
 
-  Simulator::Schedule(Seconds(1.0), showProgress);
+  Simulator::Schedule(Seconds(TotalTime / 100.0), showProgress);
 }
 
 int
@@ -141,7 +146,7 @@ main(int argc, char *argv[])
   uint32_t systemCount = MpiInterface::GetSize();
 
   // Creating nodes
-  int node_num = 5;
+  int node_num = NodesCnt;
   NodeContainer nodes;
   for(int i = 0; i < node_num; i ++){
     nodes.Create(1, i % systemCount);
@@ -183,8 +188,8 @@ main(int argc, char *argv[])
       // sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
       sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
       sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(2));
-      sleepingAppHelper.SetAttribute("MaxEntropy", IntegerValue(3));
-      sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(2));
+      sleepingAppHelper.SetAttribute("MaxEntropy", IntegerValue(MaxEntropy));
+      sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(EntropyThreshold));
 
       sleepingAppHelper.Install(object).Start(Seconds(2));
     }
@@ -205,9 +210,9 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
   // Simulator::Schedule(Seconds(99.0), inspectRecords);
   if(systemId == 0){
-    Simulator::Schedule(Seconds(1.0), showProgress);
+    Simulator::Schedule(Seconds(TotalTime / 100.0), showProgress);
   }
-  Simulator::Stop(Seconds(100.0));
+  Simulator::Stop(Seconds(TotalTime));
 
   start_time = std::chrono::steady_clock::now();
 
