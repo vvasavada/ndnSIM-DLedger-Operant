@@ -73,11 +73,12 @@ protected:
   std::string
   GetSyncRandomize() const;
 
-private:
+public:
   // Get approved blocks from record content
   std::vector<std::string>
   GetApprovedBlocks(shared_ptr<const Data> data);
 
+private:
   // Generates new record and sends notif interest
   void
   GenerateRecord();
@@ -92,7 +93,7 @@ private:
 
   // Update weight of records
   void
-  UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>& visited);
+  UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>& visited, std::string nodeName);
 
 protected:
 

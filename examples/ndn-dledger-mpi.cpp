@@ -60,17 +60,28 @@ inspectRecords()
     }
 
     for(auto & it : ledger) {
-      cout << "\"" << namemap[it.first] << "\"";
-      if(it.second.approverNames.size() > 0){
-        cout << " -> {";
-        for(auto & approver : it.second.approverNames) {
-          cout << " \"" << namemap[approver] << "\"";
+      auto approvees = peer->GetApprovedBlocks(it.second.block);
+      if(approvees.size() > 0){
+        cout << "{";
+        for(const auto & approvee : approvees){
+          cout << " \"" << namemap[approvee] << "\"";
         }
-        cout << " }";
+        cout << " } -> ";
       }
+
+      cout << "\"" << namemap[it.first] << "\"";
+      // if(it.second.approverNames.size() > 0){
+      //   cout << " -> {";
+      //   for(auto & approver : it.second.approverNames) {
+      //     cout << " \"" << namemap[approver] << "\"";
+      //   }
+      //   cout << " }";
+      // }
       cout << endl;
     }
     cout << "}" << endl;
+
+    break;
   }
   Simulator::Schedule(Seconds(100.0), inspectRecords);
 }
@@ -83,7 +94,28 @@ showProgress(){
   static int progress = 0;
   std::cout << ++ progress << "% "
             << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count()
-            << std::endl;
+            << "sec";
+            //<< std::endl;
+
+  auto node = NodeList::Begin();
+  for(; node != NodeList::End(); ++ node) {
+    if((*node)->GetNApplications() == 0)
+      continue;
+    break;
+  }
+
+  auto peer = DynamicCast<ns3::ndn::Peer>((*node)->GetApplication(0));
+  auto & ledger = peer->GetLedger();
+  int unconfirmedCnt = 0;
+  for(const auto & record : ledger){
+    if(record.second.entropy < 2) { // EntropyThreshold -> confirm
+      unconfirmedCnt ++;
+    }
+  }
+  std::cout << " Total Count=" << ledger.size();
+  std::cout << " Unconfirmed Count=" << unconfirmedCnt;
+  std::cout << std::endl;
+
   Simulator::Schedule(Seconds(1.0), showProgress);
 }
 
@@ -170,7 +202,7 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(31)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
-  // Simulator::Schedule(Seconds(20.0), inspectRecords);
+  // Simulator::Schedule(Seconds(99.0), inspectRecords);
   if(systemId == 0){
     Simulator::Schedule(Seconds(1.0), showProgress);
   }
