@@ -43,8 +43,8 @@ Peer::GetTypeId()
     .SetParent<App>()
     .AddConstructor<Peer>()
     //******** Variables to tune
-    .AddAttribute("Frequency", "Frequency of record generation", IntegerValue(1),
-                  MakeIntegerAccessor(&Peer::m_frequency), MakeIntegerChecker<int32_t>())
+    .AddAttribute("Frequency", "Frequency of record generation", DoubleValue(1.0),
+                  MakeDoubleAccessor(&Peer::m_frequency), MakeDoubleChecker<double>())
     .AddAttribute("SyncFrequency", "Frequency of sync interest multicast", IntegerValue(1),
                   MakeIntegerAccessor(&Peer::m_syncFrequency), MakeIntegerChecker<int32_t>())
     //.AddAttribute("WeightThreshold", "Weight to consider archive", IntegerValue(10),

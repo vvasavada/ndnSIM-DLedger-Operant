@@ -177,7 +177,7 @@ main(int argc, char *argv[])
       AppHelper sleepingAppHelper("Peer");
       sleepingAppHelper.SetAttribute("Routable-Prefix", StringValue(prefix));
       sleepingAppHelper.SetAttribute("Multicast-Prefix", StringValue("/dledger"));
-      sleepingAppHelper.SetAttribute("Frequency", IntegerValue(1));
+      sleepingAppHelper.SetAttribute("Frequency", DoubleValue(0.2));
       // sleepingAppHelper.SetAttribute("WeightThreshold", IntegerValue(10));
       // sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
       sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
