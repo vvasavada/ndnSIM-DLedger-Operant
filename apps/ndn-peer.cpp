@@ -45,8 +45,8 @@ Peer::GetTypeId()
     //******** Variables to tune
     .AddAttribute("Frequency", "Frequency of record generation", DoubleValue(1.0),
                   MakeDoubleAccessor(&Peer::m_frequency), MakeDoubleChecker<double>())
-    .AddAttribute("SyncFrequency", "Frequency of sync interest multicast", IntegerValue(1),
-                  MakeIntegerAccessor(&Peer::m_syncFrequency), MakeIntegerChecker<int32_t>())
+    .AddAttribute("SyncFrequency", "Frequency of sync interest multicast", DoubleValue(1.0),
+                  MakeDoubleAccessor(&Peer::m_syncFrequency), MakeDoubleChecker<double>())
     //.AddAttribute("WeightThreshold", "Weight to consider archive", IntegerValue(10),
     //              MakeIntegerAccessor(&Peer::m_weightThreshold), MakeIntegerChecker<int32_t>())
     .AddAttribute("MaxEntropy", "The max entropy a block can gain", IntegerValue(15),
