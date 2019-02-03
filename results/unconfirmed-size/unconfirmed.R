@@ -13,8 +13,13 @@ library(doBy)
 args = commandArgs(trailingOnly=TRUE)
 #target = args[1]
 target="30n-10e-15m-500s"
-  
+
 data = read.table(paste(target, "txt", sep="."), header=T)
+for (i in 1:nrow(data)) {
+  data$ratio[i] = data$unconfirmed[i]/data$total[i]
+  if (i == 1)
+    data$ratio[i] = 0
+}
 
 # graph rates on selected nodes in number of incoming interest packets
 g.nodes <- ggplot(data) +
