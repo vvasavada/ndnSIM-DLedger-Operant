@@ -21,6 +21,10 @@ public:
   int entropy = 0;
   std::set<std::string> approverNames;
   bool isArchived = false;
+
+public:
+  bool isASample = false;
+  Time creationTime;
 };
 
 class Peer: public App

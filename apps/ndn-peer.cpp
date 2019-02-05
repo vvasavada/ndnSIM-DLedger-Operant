@@ -32,7 +32,12 @@ LedgerRecord::LedgerRecord(shared_ptr<const Data> contentObject,
   , entropy(entropy)
   , isArchived(isArchived)
 {
-
+  Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable>();
+  int num = static_cast<int>(x->GetValue()*100);
+  if (num > 95) {
+    isASample = true;
+    creationTime = Simulator::Now();
+  }
 }
 
 // register NS-3 Type
@@ -364,6 +369,11 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>&
           it->second.entropy = it->second.approverNames.size();
           if (it->second.entropy >= m_entropyThreshold) {
             it->second.isArchived = true;
+            if (it->second.isASample) {
+              auto time = Simulator::Now() - it->second.creationTime;
+              uint64_t period = time.ToInteger(Time::MS);
+              std::cout << "time to get confirmed(MS): " << period << std::endl;
+            }
           }
           if (it->second.entropy >= m_maxEntropy) {
             continue;
@@ -464,7 +474,7 @@ Peer::OnData(std::shared_ptr<const Data> data)
           it ++;
           continue;
         }
-        
+
         NS_LOG_INFO("POPED " << record.block->getName());
         m_tipList.push_back(recordName);
         m_ledger.insert(std::pair<std::string, LedgerRecord>(record.block->getName().toUri(), record));

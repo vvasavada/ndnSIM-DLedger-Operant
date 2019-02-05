@@ -119,7 +119,8 @@ main(int argc, char *argv[])
     AppHelper sleepingAppHelper("Peer");
     sleepingAppHelper.SetAttribute("Routable-Prefix", StringValue(prefix));
     sleepingAppHelper.SetAttribute("Multicast-Prefix", StringValue("/dledger"));
-    sleepingAppHelper.SetAttribute("Frequency", IntegerValue(1));
+    sleepingAppHelper.SetAttribute("Frequency", DoubleValue(0.2));
+    sleepingAppHelper.SetAttribute("SyncFrequency", DoubleValue(0.1));
     // sleepingAppHelper.SetAttribute("WeightThreshold", IntegerValue(10));
     // sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
     sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
@@ -143,10 +144,10 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(31)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
-  Simulator::Schedule(Seconds(20.0), inspectRecords);
+  // Simulator::Schedule(Seconds(20.0), inspectRecords);
 
-  Simulator::Schedule(Seconds(25.0), failLink, nodes.Get(4)->GetDevice(0));
-  Simulator::Schedule(Seconds(65.0), upLink, nodes.Get(4)->GetDevice(0));
+  // Simulator::Schedule(Seconds(25.0), failLink, nodes.Get(4)->GetDevice(0));
+  // Simulator::Schedule(Seconds(65.0), upLink, nodes.Get(4)->GetDevice(0));
 
   Simulator::Stop(Seconds(105.0));
 
