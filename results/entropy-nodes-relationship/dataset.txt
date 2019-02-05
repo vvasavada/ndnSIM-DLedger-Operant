@@ -1,0 +1,32 @@
+frequency = 0.1
+SyncFrequency = 0.5
+
+1:
+const int NodesCnt = 50;
+const int EntropyThreshold = 5;
+const int MaxEntropy = 10;
+const double TotalTime = 200.0;
+
+2:
+const int NodesCnt = 50;
+const int EntropyThreshold = 10;
+const int MaxEntropy = 15;
+const double TotalTime = 200.0;
+
+3:
+const int NodesCnt = 50;
+const int EntropyThreshold = 20;
+const int MaxEntropy = 30;
+const double TotalTime = 200.0;
+
+4:
+const int NodesCnt = 25;
+const int EntropyThreshold = 5;
+const int MaxEntropy = 10;
+const double TotalTime = 200.0;
+
+5:
+const int NodesCnt = 10;
+const int EntropyThreshold = 5;
+const int MaxEntropy = 10;
+const double TotalTime = 200.0;
