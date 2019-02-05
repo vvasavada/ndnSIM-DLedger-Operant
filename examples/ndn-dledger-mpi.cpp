@@ -29,10 +29,10 @@ using ns3::ndn::GlobalRoutingHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
-const int NodesCnt = 30;
+const int NodesCnt = 50;
 const int EntropyThreshold = 10;
 const int MaxEntropy = 15;
-const double TotalTime = 150.0;
+const double TotalTime = 500.0;
 
 void
 failLink(Ptr<NetDevice> nd)
@@ -97,9 +97,9 @@ void
 showProgress(){
   auto end_time = std::chrono::steady_clock::now();
   static int progress = 0;
-  std::cout << ++ progress << "% "
+  std::cout << ++ progress << " "
             << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count()
-            << "sec";
+            << "";
             //<< std::endl;
 
   auto node = NodeList::Begin();
@@ -117,11 +117,11 @@ showProgress(){
       unconfirmedCnt ++;
     }
   }
-  std::cout << " Total Count=" << ledger.size();
-  std::cout << " Unconfirmed Count=" << unconfirmedCnt;
+  std::cout << " " << ledger.size();
+  std::cout << " " << unconfirmedCnt;
   std::cout << std::endl;
 
-  Simulator::Schedule(Seconds(TotalTime / 100.0), showProgress);
+  Simulator::Schedule(Seconds(1.0), showProgress);
 }
 
 int
@@ -210,7 +210,7 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
   // Simulator::Schedule(Seconds(99.0), inspectRecords);
   if(systemId == 0){
-    Simulator::Schedule(Seconds(TotalTime / 100.0), showProgress);
+    Simulator::Schedule(Seconds(1.0), showProgress);
   }
   Simulator::Stop(Seconds(TotalTime));
 
