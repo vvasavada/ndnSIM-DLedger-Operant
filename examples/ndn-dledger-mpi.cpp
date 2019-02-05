@@ -29,9 +29,9 @@ using ns3::ndn::GlobalRoutingHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
-const int NodesCnt = 50;
-const int EntropyThreshold = 10;
-const int MaxEntropy = 15;
+const int NodesCnt = 10;
+const int EntropyThreshold = 5;
+const int MaxEntropy = 10;
 const double TotalTime = 500.0;
 
 void
