@@ -34,7 +34,8 @@ LedgerRecord::LedgerRecord(shared_ptr<const Data> contentObject,
 {
   Ptr<UniformRandomVariable> x = CreateObject<UniformRandomVariable>();
   int num = static_cast<int>(x->GetValue()*100);
-  if (num > 95) {
+  //if (num > 95) {
+  {
     isASample = true;
     creationTime = Simulator::Now();
   }
@@ -369,10 +370,11 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>&
           it->second.entropy = it->second.approverNames.size();
           if (it->second.entropy >= m_entropyThreshold) {
             it->second.isArchived = true;
-            if (it->second.isASample) {
+            if (it->second.isASample && this->m_node->GetId() == 0) {
               auto time = Simulator::Now() - it->second.creationTime;
               uint64_t period = time.ToInteger(Time::MS);
-              std::cout << "time to get confirmed(MS): " << period << std::endl;
+              std::cout << period << std::endl;
+              it->second.isASample = false;
             }
           }
           if (it->second.entropy >= m_maxEntropy) {
