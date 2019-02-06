@@ -123,7 +123,7 @@ Peer::ScheduleNextGeneration()
   if (m_firstTime) {
     auto node = GetNode();
     int id = node->GetId();
-    double startingPoint = id/100;
+    double startingPoint = id/5;
     m_sendEvent = Simulator::Schedule(Seconds(startingPoint), &Peer::GenerateRecord, this);
     m_firstTime = false;
   }
