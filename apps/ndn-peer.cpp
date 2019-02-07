@@ -376,7 +376,7 @@ Peer::UpdateWeightAndEntropy(shared_ptr<const Data> tail, std::set<std::string>&
             if (it->second.isASample && this->m_node->GetId() == 0) {
               auto time = Simulator::Now() - it->second.creationTime;
               uint64_t period = time.ToInteger(Time::MS);
-              // std::cout << period << std::endl;
+              std::cout << period << std::endl;
               it->second.isASample = false;
             }
           }

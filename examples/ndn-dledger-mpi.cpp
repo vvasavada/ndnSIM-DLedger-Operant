@@ -29,9 +29,9 @@ using ns3::ndn::GlobalRoutingHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
-const int NodesCnt = 10;
-const int EntropyThreshold = 5;
-const int MaxEntropy = 10;
+const int NodesCnt = 50;
+const int EntropyThreshold = 20;
+const int MaxEntropy = 30;
 const double TotalTime = 500.0;
 
 void
@@ -210,7 +210,7 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
   // Simulator::Schedule(Seconds(99.0), inspectRecords);
   if(systemId == 0){
-    Simulator::Schedule(Seconds(1.0), showProgress);
+    //Simulator::Schedule(Seconds(1.0), showProgress);
   }
   Simulator::Stop(Seconds(TotalTime));
 
