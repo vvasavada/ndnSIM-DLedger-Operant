@@ -151,7 +151,7 @@ Peer::ScheduleNextSync()
   if (m_syncFirstTime) {
     auto node = GetNode();
     int id = node->GetId();
-    double startingPoint = id/100;
+    double startingPoint = id/10;
     m_syncSendEvent = Simulator::Schedule(Seconds(startingPoint), &Peer::GenerateSync, this);
     m_syncFirstTime = false;
   }
@@ -289,6 +289,9 @@ Peer::GenerateRecord()
       isArchived = m_ledger.find(reference)->second.isArchived;
     }
     selectedBlocks.insert(reference);
+    if (i == m_referredNum && selectedBlocks.size() < 2) {
+      i--;
+    }
   }
 
   std::string recordContent = "";

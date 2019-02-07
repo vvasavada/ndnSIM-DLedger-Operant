@@ -72,6 +72,39 @@ inspectRecords()
   Simulator::Schedule(Seconds(20.0), inspectRecords);
 }
 
+std::chrono::steady_clock::time_point start_time;
+
+void
+showProgress(){
+  auto end_time = std::chrono::steady_clock::now();
+  static int progress = 0;
+  std::cout << ++ progress << " "
+            << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count()
+            << "";
+            //<< std::endl;
+
+  auto node = NodeList::Begin();
+  for(; node != NodeList::End(); ++ node) {
+    if((*node)->GetNApplications() == 0)
+      continue;
+    break;
+  }
+
+  auto peer = DynamicCast<ns3::ndn::Peer>((*node)->GetApplication(0));
+  auto & ledger = peer->GetLedger();
+  int unconfirmedCnt = 0;
+  for(const auto & record : ledger){
+    if (record.second.isArchived == false) { // EntropyThreshold -> confirm
+      unconfirmedCnt ++;
+    }
+  }
+  std::cout << " " << ledger.size();
+  std::cout << " " << unconfirmedCnt;
+  std::cout << std::endl;
+
+  Simulator::Schedule(Seconds(1.0), showProgress);
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -86,7 +119,7 @@ main(int argc, char *argv[])
   cmd.Parse(argc, argv);
 
   // Creating nodes
-  int node_num = 8;
+  int node_num = 30;
   NodeContainer nodes;
   nodes.Create(node_num);
 
@@ -124,9 +157,9 @@ main(int argc, char *argv[])
     // sleepingAppHelper.SetAttribute("WeightThreshold", IntegerValue(10));
     // sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
     sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
-    sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(2));
-    sleepingAppHelper.SetAttribute("MaxEntropy", IntegerValue(3));
-    sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(2));
+    sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(3));
+    sleepingAppHelper.SetAttribute("MaxEntropy", IntegerValue(5));
+    sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(8));
 
     sleepingAppHelper.Install(object).Start(Seconds(2));
 
@@ -149,15 +182,16 @@ main(int argc, char *argv[])
   // Simulator::Schedule(Seconds(25.0), failLink, nodes.Get(4)->GetDevice(0));
   // Simulator::Schedule(Seconds(65.0), upLink, nodes.Get(4)->GetDevice(0));
 
-  Simulator::Stop(Seconds(105.0));
-
-  auto start_time = std::chrono::steady_clock::now();
+  Simulator::Schedule(Seconds(1.0), showProgress);
+  Simulator::Stop(Seconds(300.0));
+  start_time = std::chrono::steady_clock::now();
+  std::cout << "simulation-time real-time total unconfirmed" << std::endl;
 
   Simulator::Run();
 
-  auto end_time = std::chrono::steady_clock::now();
-  std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count()
-            << " secs" << std::endl;
+  // auto end_time = std::chrono::steady_clock::now();
+  // std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count()
+  //           << " secs" << std::endl;
 
   Simulator::Destroy ();
 
