@@ -289,7 +289,7 @@ Peer::GenerateRecord()
       isArchived = m_ledger.find(reference)->second.isArchived;
     }
     selectedBlocks.insert(reference);
-    if (i == m_referredNum && selectedBlocks.size() < 2) {
+    if (i == m_referredNum - 1 && selectedBlocks.size() < 2) {
       i--;
     }
   }
