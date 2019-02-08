@@ -275,6 +275,10 @@ Peer::GenerateSync()
 void
 Peer::GenerateRecord()
 {
+  if (m_recordStack.size() > 0) {
+    ScheduleNextGeneration();
+    return;
+  }
   std::set<std::string> selectedBlocks;
   for (int i = 0; i < m_referredNum; i++) {
     auto referenceIndex = rand() % (m_tipList.size() - 1);
