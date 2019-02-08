@@ -26,11 +26,11 @@ data3 = head(data3, 400)
 # graph rates on selected nodes in number of incoming interest packets
 g.nodes <- ggplot(NULL) +
   #geom_line(data=data, aes (x=simulation.time, y=total, colour="darkblue"), size=2, linetype = "dotted") +
-  #geom_line(data=data, aes (x=simulation.time, y=unconfirmed, colour="red"), size=2, linetype = "solid") +
+  geom_line(data=data, aes (x=simulation.time, y=unconfirmed, colour="black"), size=2, linetype = "solid") +
   #geom_line(data=data2, aes (x=simulation.time, y=total, colour="darkblue"), size=2, linetype = "dotted") +
   #geom_line(data=data2, aes (x=simulation.time, y=unconfirmed, colour="darkblue"), size=2, linetype = "solid") + 
-  geom_line(data=data3, aes (x=simulation.time, y=total, colour="darkblue"), size=2, linetype = "dotted") +
-  geom_line(data=data3, aes (x=simulation.time, y=unconfirmed, colour="red"), size=2, linetype = "solid") +
+  #geom_line(data=data3, aes (x=simulation.time, y=total, colour="darkblue"), size=2, linetype = "dotted") +
+  geom_line(data=data3, aes (x=simulation.time, y=unconfirmed, colour="black"), size=2, linetype = "solid") +
   scale_color_discrete(name = "Record Types", labels = c("Total", "Unconfirmed")) +
   xlab("Time [second]") +
   ylab("Records Number") +
