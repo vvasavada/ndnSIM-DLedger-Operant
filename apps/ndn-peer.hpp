@@ -114,13 +114,14 @@ protected:
   std::map<std::string, LedgerRecord> m_ledger;
 
   std::list<LedgerRecord> m_recordStack; // records stacked until their ancestors arrive
+  std::set<std::string> m_missingRecords;
   int m_reqCounter; // request counter that talies record fetching interests sent with data received back
 
   // the var to tune
   double m_frequency; // Frequency of record generation (in hertz)
   double m_syncFrequency; // Frequency of sync interest multicast
   int m_weightThreshold; // weight to be considered as archived block
-  int m_maxEntropy; // max entropy of a block which no new tips can refer
+  int m_conEntropy; // max entropy of a block which no new tips can refer
   int m_entropyThreshold; // the number of peers to approve
   int m_genesisNum; // the number of genesis blocks
   int m_referredNum; // the number of referred blocks

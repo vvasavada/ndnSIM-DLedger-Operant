@@ -21,6 +21,11 @@ using ns3::ndn::GlobalRoutingHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
+const int NodesCnt = 15;
+const int EntropyThreshold = 8;
+const int MaxEntropy = 5;
+const double TotalTime = 150.0;
+
 void
 failLink(Ptr<NetDevice> nd)
 {
@@ -37,12 +42,15 @@ upLink(Ptr<NetDevice> nd)
   nd->SetAttribute ("ReceiveErrorModel", PointerValue(error));
 }
 
+// TODO: THE RESULTS INTERWAVES; USE FILE TO OUTPUT.
 void
 inspectRecords()
 {
   map<std::string, std::string> namemap;
 
   for(auto node = NodeList::Begin(); node != NodeList::End(); ++ node) {
+    if((*node)->GetNApplications() == 0)
+      continue;
     auto peer = DynamicCast<ns3::ndn::Peer>((*node)->GetApplication(0));
     auto & ledger = peer->GetLedger();
     cout << "================================================" << endl;
@@ -57,19 +65,33 @@ inspectRecords()
     }
 
     for(auto & it : ledger) {
+      auto approvees = peer->GetApprovedBlocks(it.second.block);
+
       cout << "\"" << namemap[it.first] << "\"";
-      if(it.second.approverNames.size() > 0){
+
+      if(approvees.size() > 0){
         cout << " -> {";
-        for(auto & approver : it.second.approverNames) {
-          cout << " \"" << namemap[approver] << "\"";
+        for(const auto & approvee : approvees){
+          cout << " \"" << namemap[approvee] << "\"";
         }
         cout << " }";
       }
+
+
+      // if(it.second.approverNames.size() > 0){
+      //   cout << " -> {";
+      //   for(auto & approver : it.second.approverNames) {
+      //     cout << " \"" << namemap[approver] << "\"";
+      //   }
+      //   cout << " }";
+      // }
       cout << endl;
     }
     cout << "}" << endl;
+
+    //break;
   }
-  Simulator::Schedule(Seconds(20.0), inspectRecords);
+  Simulator::Schedule(Seconds(100.0), inspectRecords);
 }
 
 std::chrono::steady_clock::time_point start_time;
@@ -78,9 +100,9 @@ void
 showProgress(){
   auto end_time = std::chrono::steady_clock::now();
   static int progress = 0;
-  std::cout << ++ progress << " "
+  std::cout << ++ progress << "% "
             << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count()
-            << "";
+            << "sec";
             //<< std::endl;
 
   auto node = NodeList::Begin();
@@ -94,12 +116,12 @@ showProgress(){
   auto & ledger = peer->GetLedger();
   int unconfirmedCnt = 0;
   for(const auto & record : ledger){
-    if (record.second.isArchived == false) { // EntropyThreshold -> confirm
+    if(record.second.entropy < EntropyThreshold) { // EntropyThreshold -> confirm
       unconfirmedCnt ++;
     }
   }
-  std::cout << " " << ledger.size();
-  std::cout << " " << unconfirmedCnt;
+  std::cout << " Total Count=" << ledger.size();
+  std::cout << " Unconfirmed Count=" << unconfirmedCnt;
   std::cout << std::endl;
 
   Simulator::Schedule(Seconds(1.0), showProgress);
@@ -119,7 +141,7 @@ main(int argc, char *argv[])
   cmd.Parse(argc, argv);
 
   // Creating nodes
-  int node_num = 30;
+  int node_num = NodesCnt;
   NodeContainer nodes;
   nodes.Create(node_num);
 
@@ -147,17 +169,17 @@ main(int argc, char *argv[])
   int counter = 0;
   for (NodeContainer::Iterator i = nodes.Begin(); i != nodes.End(); ++i) {
     Ptr<Node> object = *i;
-
     std::string prefix = "/dledger/node" + std::to_string(counter);
+
     AppHelper sleepingAppHelper("Peer");
     sleepingAppHelper.SetAttribute("Routable-Prefix", StringValue(prefix));
     sleepingAppHelper.SetAttribute("Multicast-Prefix", StringValue("/dledger"));
     sleepingAppHelper.SetAttribute("Frequency", DoubleValue(0.2));
     sleepingAppHelper.SetAttribute("SyncFrequency", DoubleValue(0.1));
     sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
-    sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(3));
-    sleepingAppHelper.SetAttribute("ConEntropy", IntegerValue(5));
-    sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(8));
+    sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(2));
+    sleepingAppHelper.SetAttribute("ConEntropy", IntegerValue(EntropyThreshold - 3));
+    sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(EntropyThreshold));
 
     sleepingAppHelper.Install(object).Start(Seconds(2));
 
@@ -171,27 +193,15 @@ main(int argc, char *argv[])
   GlobalRoutingHelper::CalculateRoutes();
 
   // Finish Installation****************************************************
-  // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(30)->GetDevice(0));
-  // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(31)->GetDevice(0));
-  // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(50)->GetDevice(0));
-  // Simulator::Schedule(Seconds(5.0), failLink, nodes.Get(51)->GetDevice(0));
-  // Simulator::Schedule(Seconds(20.0), inspectRecords);
+  Simulator::Schedule(Seconds(20.0), failLink, nodes.Get(9)->GetDevice(0));
+  Simulator::Schedule(Seconds(120.0), upLink, nodes.Get(9)->GetDevice(0));
 
-  // Simulator::Schedule(Seconds(25.0), failLink, nodes.Get(4)->GetDevice(0));
-  // Simulator::Schedule(Seconds(65.0), upLink, nodes.Get(4)->GetDevice(0));
+  Simulator::Schedule(Seconds(TotalTime - 0.1), inspectRecords);
+  Simulator::Stop(Seconds(TotalTime));
 
-  Simulator::Schedule(Seconds(1.0), showProgress);
-  Simulator::Stop(Seconds(300.0));
   start_time = std::chrono::steady_clock::now();
-  std::cout << "simulation-time real-time total unconfirmed" << std::endl;
 
   Simulator::Run();
-
-  // auto end_time = std::chrono::steady_clock::now();
-  // std::cout << std::chrono::duration_cast<std::chrono::duration<double>>(end_time - start_time).count()
-  //           << " secs" << std::endl;
-
   Simulator::Destroy ();
-
   return 0;
 }
