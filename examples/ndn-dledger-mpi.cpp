@@ -31,7 +31,7 @@ NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
 const int NodesCnt = 50;
 const int EntropyThreshold = 20;
-const int MaxEntropy = 30;
+const int ConEntropy = EntropyThreshold - 3;
 const double TotalTime = 500.0;
 
 void
@@ -188,7 +188,7 @@ main(int argc, char *argv[])
       // sleepingAppHelper.SetAttribute("MaxWeight", IntegerValue(15));
       sleepingAppHelper.SetAttribute("GenesisNum", IntegerValue(5));
       sleepingAppHelper.SetAttribute("ReferredNum", IntegerValue(2));
-      sleepingAppHelper.SetAttribute("MaxEntropy", IntegerValue(MaxEntropy));
+      sleepingAppHelper.SetAttribute("ConEntropy", IntegerValue(ConEntropy));
       sleepingAppHelper.SetAttribute("EntropyThreshold", IntegerValue(EntropyThreshold));
 
       sleepingAppHelper.Install(object).Start(Seconds(2));
