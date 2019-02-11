@@ -24,7 +24,7 @@ NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 const int NodesCnt = 15;
 const int EntropyThreshold = 8;
 const int MaxEntropy = 5;
-const double TotalTime = 150.0;
+const double TotalTime = 100.0;
 
 void
 failLink(Ptr<NetDevice> nd)
@@ -193,8 +193,8 @@ main(int argc, char *argv[])
   GlobalRoutingHelper::CalculateRoutes();
 
   // Finish Installation****************************************************
-  Simulator::Schedule(Seconds(20.0), failLink, nodes.Get(9)->GetDevice(0));
-  Simulator::Schedule(Seconds(120.0), upLink, nodes.Get(9)->GetDevice(0));
+  Simulator::Schedule(Seconds(20.0), failLink, nodes.Get(7)->GetDevice(0));
+  Simulator::Schedule(Seconds(80.0), upLink, nodes.Get(7)->GetDevice(0));
 
   Simulator::Schedule(Seconds(TotalTime - 0.1), inspectRecords);
   Simulator::Stop(Seconds(TotalTime));
