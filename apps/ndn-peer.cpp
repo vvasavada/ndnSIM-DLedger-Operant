@@ -66,6 +66,8 @@ Peer::GetTypeId()
                   MakeNameAccessor(&Peer::m_routablePrefix), MakeNameChecker())
     .AddAttribute("Multicast-Prefix", "Multicast Prefix", StringValue("/dledger"),
                   MakeNameAccessor(&Peer::m_mcPrefix), MakeNameChecker())
+    .AddAttribute("Identity-Manager-Prefix", "Identity Manager's Prefix", StringValue("/"),
+                  MakeNameAccessor(&Peer::m_idManagerPrefix), MakeNameChecker())
     .AddAttribute("Randomize",
                   "Type of send time randomization: none (default), uniform, exponential",
                   StringValue("none"),
@@ -109,6 +111,17 @@ Peer::GetApprovedBlocks(shared_ptr<const Data> data)
   }
 
   return approvedBlocks;
+}
+
+
+void
+Peer::AddRevocation(shared_ptr<const Data> data)
+{
+  auto content = ::ndn::encoding::readString(data->getContent());
+  size_t pos = 0;
+  pos = content.find("***");
+  content = content.substr(pos + 3);
+  m_blackList.push_back(content);
 }
 
 void
@@ -238,7 +251,9 @@ Peer::StartApplication()
     m_ledger.insert(std::pair<std::string, LedgerRecord>(genesisNameStr, LedgerRecord(genesis)));
   }
 
-  ScheduleNextGeneration();
+  if (m_routablePrefix != m_idManagerPrefix) {
+    ScheduleNextGeneration();
+  }
   ScheduleNextSync();
 }
 
@@ -269,16 +284,8 @@ Peer::GenerateSync()
   ScheduleNextSync();
 }
 
-// Generate a new record and send out notif and sync interest
-void
-Peer::GenerateRecord()
-{
-  NS_LOG_FUNCTION_NOARGS();
-  if (m_missingRecords.size() > 0) {
-    NS_LOG_INFO("Missing record number: " << m_missingRecords.size());
-    ScheduleNextGeneration();
-    return;
-  }
+std::set<std::string>
+Peer::SelectApprovals(bool revocation){
   std::set<std::string> selectedBlocks;
   int tryTimes = 0;
   for (int i = 0; i < m_referredNum; i++) {
@@ -299,12 +306,19 @@ Peer::GenerateRecord()
       tryTimes++;
       if (tryTimes > 10) {
         NS_LOG_INFO("Try times used up: " << tryTimes);
-        ScheduleNextGeneration();
-        return;
+        if (!revocation){
+          ScheduleNextGeneration();
+        }
+        return std::set<std::string>();
       }
     }
   }
+  return selectedBlocks;
+}
 
+std::string 
+Peer::BuildRecordContent(std::set<std::string> selectedBlocks, std::string specific_info)
+{
   std::string recordContent = "";
   for (const auto& item : selectedBlocks) {
     recordContent += ":";
@@ -314,7 +328,14 @@ Peer::GenerateRecord()
   }
   // to avoid the same digest made by multiple peers, add peer specific info
   recordContent += "***";
-  recordContent += m_routablePrefix.toUri();
+  recordContent += specific_info;
+
+  return recordContent;
+}
+
+void
+Peer::GenerateRecordDataAndNotify(std::string recordContent, bool revocation)
+{
 
   // generate digest as a name component
   std::istringstream sha256Is(recordContent);
@@ -349,7 +370,50 @@ Peer::GenerateRecord()
   m_transmittedInterests(notif, this, m_face);
   m_appLink->onReceiveInterest(*notif);
 
-  ScheduleNextGeneration();
+  if (!revocation) {
+    ScheduleNextGeneration();
+  }
+}
+  
+void
+Peer::GenerateRevocation(std::string revoked_node)
+{
+  NS_LOG_FUNCTION_NOARGS();
+  if (m_missingRecords.size() > 0) {
+    NS_LOG_INFO("Missing record number: " << m_missingRecords.size());
+    return;
+  }
+
+  auto selectedBlocks = SelectApprovals(true);
+  if (selectedBlocks.empty()) {
+    return;
+  }
+
+  auto recordContent = BuildRecordContent(selectedBlocks, revoked_node);
+
+  GenerateRecordDataAndNotify(recordContent, true);
+
+}
+
+// Generate a new record and send out notif and sync interest
+void
+Peer::GenerateRecord()
+{
+  NS_LOG_FUNCTION_NOARGS();
+  if (m_missingRecords.size() > 0) {
+    NS_LOG_INFO("Missing record number: " << m_missingRecords.size());
+    ScheduleNextGeneration();
+    return;
+  }
+
+  auto selectedBlocks = SelectApprovals(false);
+  if (selectedBlocks.empty()) {
+    return;
+  }
+
+  auto recordContent = BuildRecordContent(selectedBlocks, m_routablePrefix.toUri());
+
+  GenerateRecordDataAndNotify(recordContent, false);
 }
 
 
@@ -441,6 +505,12 @@ Peer::OnData(std::shared_ptr<const Data> data)
     m_missingRecords.erase(it2);
   }
 
+  auto it3 = find(m_blackList.begin(), m_blackList.end(), dataName.get(1).toUri());
+  if (it3 != m_blackList.end()) {
+    NS_LOG_INFO("Is a record from revoked entity");
+    return;
+  }
+
   std::vector<std::string> approvedBlocks = GetApprovedBlocks(data);
   m_recordStack.push_back(LedgerRecord(data));
   for (size_t i = 0; i != approvedBlocks.size(); i++) {
@@ -495,6 +565,10 @@ Peer::OnData(std::shared_ptr<const Data> data)
       NS_LOG_INFO("POPED " << record.block->getName());
       m_tipList.push_back(recordName);
       m_ledger.insert(std::pair<std::string, LedgerRecord>(record.block->getName().toUri(), record));
+      if (record.block->getName().getSubName(0, 2) == m_idManagerPrefix) {
+        AddRevocation(record.block);
+      }
+
       for (size_t i = 0; i != approvedBlocks.size(); i++) {
         m_tipList.erase(std::remove(m_tipList.begin(),
                                     m_tipList.end(), approvedBlocks[i]), m_tipList.end());

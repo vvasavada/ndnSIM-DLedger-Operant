@@ -82,10 +82,29 @@ public:
   std::vector<std::string>
   GetApprovedBlocks(shared_ptr<const Data> data);
 
+  //Generates revocation record
+  void
+  GenerateRevocation(std::string revoked_node);
+
 private:
+
   // Generates new record and sends notif interest
   void
   GenerateRecord();
+
+  /// Helper functions for revocation and record generation ///
+  std::set<std::string> 
+  SelectApprovals(bool revocation);
+
+  std::string 
+  BuildRecordContent(std::set<std::string> selectedBlocks, std::string specific_info);
+
+  void 
+  GenerateRecordDataAndNotify(std::string recordContent, bool revocation);
+
+  // Adds revocation to blackList
+  void
+  AddRevocation(shared_ptr<const Data> data);
 
   // Triggers sync interest
   void
@@ -116,6 +135,8 @@ protected:
   std::list<LedgerRecord> m_recordStack; // records stacked until their ancestors arrive
   std::set<std::string> m_missingRecords;
   int m_reqCounter; // request counter that talies record fetching interests sent with data received back
+  
+  std::vector<std::string> m_blackList; // list of nodes whose certificates has been revoked
 
   // the var to tune
   double m_frequency; // Frequency of record generation (in hertz)
@@ -129,6 +150,7 @@ protected:
 private:
   Name m_routablePrefix; // Node's prefix
   Name m_mcPrefix; // Multicast prefix
+  Name m_idManagerPrefix; // Identity Manager's Prefix
 
 public:
   std::map<std::string, LedgerRecord> & GetLedger() {
