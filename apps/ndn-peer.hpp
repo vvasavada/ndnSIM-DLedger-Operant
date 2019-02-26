@@ -152,6 +152,8 @@ private:
   Name m_mcPrefix; // Multicast prefix
   Name m_idManagerPrefix; // Identity Manager's Prefix
 
+  std::string m_lastRevocation; // to be used by identity manager
+
 public:
   std::map<std::string, LedgerRecord> & GetLedger() {
     return m_ledger;

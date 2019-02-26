@@ -253,7 +253,10 @@ Peer::StartApplication()
 
   if (m_routablePrefix != m_idManagerPrefix) {
     ScheduleNextGeneration();
+  } else {
+    m_lastRevocation = m_mcPrefix.toUri() + "/genesis/genesis0";
   }
+
   ScheduleNextSync();
 }
 
@@ -312,6 +315,9 @@ Peer::SelectApprovals(bool revocation){
         return std::set<std::string>();
       }
     }
+  }
+  if (revocation) {
+    selectedBlocks.insert(m_lastRevocation);
   }
   return selectedBlocks;
 }
@@ -372,6 +378,8 @@ Peer::GenerateRecordDataAndNotify(std::string recordContent, bool revocation)
 
   if (!revocation) {
     ScheduleNextGeneration();
+  } else {
+    m_lastRevocation = recordName.toUri();
   }
 }
   
@@ -519,7 +527,7 @@ Peer::OnData(std::shared_ptr<const Data> data)
       NS_LOG_INFO("IGNORED " << approvedBlockName);
       continue;
     }
-    if (approvedBlockName.get(1) == dataName.get(1)) { // recordname format: /dledger/node/hash
+    if (approvedBlockName.get(1) == dataName.get(1) && dataName.get(1) != m_idManagerPrefix.get(1)) { // recordname format: /dledger/node/hash
       m_recordStack.pop_back();
       NS_LOG_INFO("INTERLOCK VIOLATION " << approvedBlockName);
       return;

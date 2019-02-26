@@ -21,9 +21,9 @@ using ns3::ndn::GlobalRoutingHelper;
 
 NS_LOG_COMPONENT_DEFINE ("ndn.dledger");
 
-const int NodesCnt = 20;
-const int EntropyThreshold = 5;
-const double TotalTime = 75.0;
+const int NodesCnt = 10;
+const int EntropyThreshold = 4;
+const double TotalTime = 30.0;
 
 void
 inspectRecords()
@@ -150,8 +150,8 @@ main(int argc, char *argv[])
   GlobalRoutingHelper::CalculateRoutes();
 
   // Finish Installation****************************************************
-  Simulator::Schedule(Seconds(25.0), revoke, "node1", nodes.Get(0));
-  Simulator::Schedule(Seconds(50.0), revoke, "node2", nodes.Get(0));
+  Simulator::Schedule(Seconds(15.0), revoke, "node1", nodes.Get(0));
+  Simulator::Schedule(Seconds(20.0), revoke, "node2", nodes.Get(0));
 
   Simulator::Schedule(Seconds(TotalTime - 0.1), inspectRecords);
   Simulator::Stop(Seconds(TotalTime));
